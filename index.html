@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Armygame — Fordonsstation</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --paper: #fff;
+        --ink: #171a12;
+        --muted: #6a705f;
+        --army: #596328;
+        --signal: #d7ed39;
+        --ground-y: clamp(5.5rem, 11vh, 7.5rem);
+        --soldier-width: min(27vw, 390px);
+        --vehicle-width: min(44vw, 620px);
+        --zombie-width: min(15vw, 190px);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        min-width: 320px;
+        overflow: hidden;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: "Bahnschrift Condensed", "DIN Condensed", "Arial Narrow", sans-serif;
+      }
+
+      button,
+      kbd {
+        font: inherit;
+      }
+
+      .scene {
+        isolation: isolate;
+        position: relative;
+        min-height: 100svh;
+        overflow: hidden;
+        background: var(--paper);
+      }
+
+      .scene::before {
+        position: absolute;
+        inset: 0;
+        z-index: -2;
+        opacity: 0.42;
+        background-image: linear-gradient(90deg, transparent 49.9%, rgb(23 26 18 / 5%) 50%, transparent 50.1%);
+        background-size: 7rem 100%;
+        content: "";
+        mask-image: linear-gradient(to bottom, transparent, #000 62%, #000);
+      }
+
+      .scene::after {
+        position: absolute;
+        right: 0;
+        bottom: var(--ground-y);
+        left: 0;
+        z-index: -1;
+        height: 1px;
+        background: rgb(23 26 18 / 18%);
+        box-shadow: 0 22px 50px rgb(23 26 18 / 8%);
+        content: "";
+      }
+
+      .hud {
+        position: absolute;
+        z-index: 20;
+        top: clamp(1.2rem, 4vw, 3.2rem);
+        left: clamp(1.2rem, 4vw, 4rem);
+        display: grid;
+        gap: 0.28rem;
+        pointer-events: none;
+        text-transform: uppercase;
+      }
+
+      .hud__eyebrow {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin: 0;
+        color: var(--army);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.22em;
+      }
+
+      .hud__eyebrow::before {
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: var(--signal);
+        box-shadow: 0 0 0 4px rgb(215 237 57 / 18%);
+        content: "";
+      }
+
+      .hud h1 {
+        margin: 0;
+        font-size: clamp(2.3rem, 6vw, 5.7rem);
+        font-weight: 800;
+        letter-spacing: -0.055em;
+        line-height: 0.86;
+      }
+
+      .hud__meta {
+        margin: 0.45rem 0 0;
+        color: var(--muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.2em;
+      }
+
+      .mode-chip {
+        position: absolute;
+        z-index: 20;
+        top: clamp(1.2rem, 4vw, 3.2rem);
+        right: clamp(1.2rem, 4vw, 4rem);
+        display: grid;
+        min-width: 10.5rem;
+        padding: 0.8rem 1rem;
+        border: 1px solid rgb(23 26 18 / 18%);
+        background: rgb(255 255 255 / 88%);
+        box-shadow: 5px 5px 0 rgb(89 99 40 / 12%);
+        letter-spacing: 0.15em;
+        text-align: right;
+        text-transform: uppercase;
+      }
+
+      .mode-chip span {
+        color: var(--muted);
+        font-size: 0.58rem;
+      }
+
+      .mode-chip strong {
+        color: var(--army);
+        font-size: 0.85rem;
+      }
+
+      .ammo-meter {
+        --ammo-level: 100%;
+        position: absolute;
+        z-index: 20;
+        top: calc(clamp(1.2rem, 4vw, 3.2rem) + 4.6rem);
+        right: clamp(1.2rem, 4vw, 4rem);
+        display: grid;
+        width: 10.5rem;
+        gap: 0.32rem;
+        padding: 0.72rem 0.85rem;
+        border: 1px solid rgb(23 26 18 / 18%);
+        background: rgb(255 255 255 / 90%);
+        box-shadow: 5px 5px 0 rgb(89 99 40 / 12%);
+        text-align: right;
+        text-transform: uppercase;
+      }
+
+      .ammo-meter__row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.8rem;
+      }
+
+      .ammo-meter span,
+      .ammo-meter small {
+        color: var(--muted);
+        font-size: 0.58rem;
+        letter-spacing: 0.15em;
+      }
+
+      .ammo-meter strong {
+        color: var(--army);
+        font-size: 1.05rem;
+        letter-spacing: 0.08em;
+      }
+
+      .ammo-meter__bar {
+        height: 0.28rem;
+        overflow: hidden;
+        background: rgb(23 26 18 / 12%);
+      }
+
+      .ammo-meter__bar::after {
+        display: block;
+        width: var(--ammo-level);
+        height: 100%;
+        background: var(--signal);
+        content: "";
+        transition: width 110ms linear;
+      }
+
+      .ammo-meter.is-empty strong {
+        color: #b54624;
+      }
+
+      .ammo-meter.is-reloading .ammo-meter__bar::after {
+        width: 100%;
+        animation: reload-progress 1.15s linear;
+      }
+
+      .health-meter {
+        position: absolute;
+        z-index: 20;
+        top: calc(clamp(1.2rem, 4vw, 3.2rem) + 10.2rem);
+        right: clamp(1.2rem, 4vw, 4rem);
+        display: flex;
+        width: 10.5rem;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid rgb(23 26 18 / 18%);
+        background: rgb(255 255 255 / 90%);
+        box-shadow: 5px 5px 0 rgb(89 99 40 / 12%);
+        text-transform: uppercase;
+      }
+
+      .health-meter > span {
+        color: var(--muted);
+        font-size: 0.58rem;
+        letter-spacing: 0.15em;
+      }
+
+      .health-meter strong {
+        color: #b54624;
+        font-size: 1.05rem;
+        letter-spacing: 0.08em;
+      }
+
+      .health-meter strong span {
+        color: inherit;
+        font-size: inherit;
+        letter-spacing: inherit;
+      }
+
+      .world {
+        position: absolute;
+        inset: 0;
+      }
+
+      .soldier-stage {
+        --player-x: 18vw;
+        --move-x: 0px;
+        position: absolute;
+        z-index: 5;
+        bottom: var(--ground-y);
+        left: var(--player-x);
+        width: var(--soldier-width);
+        height: calc(var(--soldier-width) * 0.53125);
+        margin: 0;
+        opacity: 1;
+        transform: translateX(-50%) translateX(var(--move-x));
+        transition: opacity 140ms ease, transform 140ms ease;
+        will-change: left, transform;
+      }
+
+      .soldier-stage.is-mounted {
+        visibility: hidden;
+        opacity: 0;
+        transform: translateX(-50%) translateY(1rem);
+      }
+
+      .soldier-stage.is-hit {
+        animation: player-hit 180ms ease-out;
+      }
+
+      .soldier {
+        --facing: 1;
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: auto;
+        height: 100%;
+        max-width: none;
+        user-select: none;
+        filter: drop-shadow(0 14px 11px rgb(0 0 0 / 16%));
+        transform: translateX(-42.1875%) scaleX(var(--facing));
+        transform-origin: 42.1875% 50%;
+        -webkit-user-drag: none;
+      }
+
+      .zombie-stage {
+        --zombie-x: 52vw;
+        --zombie-facing: -1;
+        position: absolute;
+        z-index: 3;
+        bottom: var(--ground-y);
+        left: var(--zombie-x);
+        width: var(--zombie-width);
+        height: calc(var(--zombie-width) * 1.7778);
+        margin: 0;
+        pointer-events: none;
+        transform: translateX(-50%);
+        will-change: left;
+      }
+
+      .zombie {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        user-select: none;
+        filter: drop-shadow(0 10px 8px rgb(0 0 0 / 17%));
+        transform: translateY(9.3%) scaleX(var(--zombie-facing));
+        transform-origin: 50% 78%;
+        -webkit-user-drag: none;
+      }
+
+      .zombie-stage.is-dead {
+        z-index: 2;
+      }
+
+      .vehicle-stage {
+        --vehicle-x: 75vw;
+        --recoil-x: 0px;
+        --muzzle-right: 10%;
+        --muzzle-top: 20%;
+        position: absolute;
+        z-index: 4;
+        right: clamp(1rem, 4vw, 4rem);
+        bottom: calc(var(--ground-y) - 0.2rem);
+        width: var(--vehicle-width);
+        height: calc(var(--vehicle-width) * 0.625);
+        margin: 0;
+      }
+
+      .vehicle-stage.has-position {
+        right: auto;
+        left: var(--vehicle-x);
+        transform: translateX(-50%);
+      }
+
+      .vehicle-stage.is-firing {
+        animation: recoil 130ms cubic-bezier(0.2, 0.9, 0.35, 1);
+      }
+
+      .vehicle {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        object-position: center bottom;
+        user-select: none;
+        filter: drop-shadow(0 18px 12px rgb(0 0 0 / 13%));
+        -webkit-user-drag: none;
+      }
+
+      .vehicle--still {
+        right: 5%;
+        width: 88%;
+      }
+
+      .vehicle--animated {
+        visibility: hidden;
+        opacity: 0;
+      }
+
+      .vehicle-driving {
+        position: absolute;
+        z-index: 2;
+        inset: 0;
+        visibility: hidden;
+        opacity: 0;
+        background-image: url("car_drive_aim_spritesheet.png");
+        background-repeat: no-repeat;
+        background-position: 0 0;
+        background-size: 400% 400%;
+        filter: drop-shadow(0 18px 12px rgb(0 0 0 / 13%));
+      }
+
+      .vehicle-stage.is-mounted .vehicle--still {
+        visibility: hidden;
+        opacity: 0;
+      }
+
+      .vehicle-stage.is-mounted .vehicle--animated {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .vehicle-stage.is-mounted.is-driving .vehicle--animated {
+        visibility: hidden;
+        opacity: 0;
+      }
+
+      .vehicle-stage.is-mounted.is-driving .vehicle-driving {
+        visibility: visible;
+        opacity: 1;
+      }
+
+      .entry-prompt {
+        position: absolute;
+        z-index: 18;
+        right: min(30vw, 25rem);
+        bottom: calc(var(--ground-y) + min(23vw, 16rem));
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.65rem 0.85rem;
+        border: 1px solid var(--ink);
+        color: var(--ink);
+        background: var(--signal);
+        box-shadow: 4px 4px 0 var(--ink);
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .entry-prompt[hidden] {
+        display: none;
+      }
+
+      .entry-prompt.is-denied {
+        animation: deny 220ms ease-in-out 2;
+      }
+
+      kbd {
+        display: inline-grid;
+        min-width: 1.8rem;
+        height: 1.8rem;
+        padding-inline: 0.45rem;
+        place-items: center;
+        border: 1px solid rgb(23 26 18 / 35%);
+        border-radius: 0.15rem;
+        color: var(--ink);
+        background: #f4f5ed;
+        box-shadow: 0 2px 0 rgb(23 26 18 / 22%);
+        font-weight: 800;
+      }
+
+      .controls {
+        position: absolute;
+        z-index: 20;
+        bottom: clamp(1rem, 3vw, 2.2rem);
+        left: clamp(1.2rem, 4vw, 4rem);
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        margin: 0;
+        color: var(--muted);
+        font-size: 0.68rem;
+        letter-spacing: 0.11em;
+        text-transform: uppercase;
+      }
+
+      .controls__divider {
+        width: 1px;
+        height: 1.7rem;
+        margin-inline: 0.4rem;
+        background: rgb(23 26 18 / 18%);
+      }
+
+      .crosshair {
+        --crosshair-x: 50vw;
+        --crosshair-y: 40vh;
+        position: fixed;
+        z-index: 40;
+        top: var(--crosshair-y);
+        left: var(--crosshair-x);
+        display: none;
+        width: 2.4rem;
+        height: 2.4rem;
+        border: 1px solid rgb(23 26 18 / 78%);
+        border-radius: 50%;
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 0 1px rgb(255 255 255 / 80%), inset 0 0 0 1px rgb(255 255 255 / 80%);
+      }
+
+      .crosshair::before,
+      .crosshair::after {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        background: var(--ink);
+        content: "";
+        transform: translate(-50%, -50%);
+      }
+
+      .crosshair::before {
+        width: 3.4rem;
+        height: 1px;
+      }
+
+      .crosshair::after {
+        width: 1px;
+        height: 3.4rem;
+      }
+
+      .crosshair.is-active {
+        display: block;
+      }
+
+      .crosshair.is-firing {
+        border-color: #c65720;
+        transform: translate(-50%, -50%) scale(0.78);
+      }
+
+      .muzzle-flash {
+        position: absolute;
+        z-index: 9;
+        top: var(--muzzle-top);
+        right: var(--muzzle-right);
+        width: 5.5rem;
+        aspect-ratio: 1;
+        opacity: 0;
+        pointer-events: none;
+        background: radial-gradient(circle, #fff 0 8%, #fff88c 9% 19%, #ff9b23 20% 34%, transparent 58%);
+        filter: drop-shadow(0 0 12px #ff9b23);
+        clip-path: polygon(0 38%, 42% 44%, 24% 5%, 57% 34%, 78% 0, 72% 38%, 100% 50%, 70% 59%, 82% 96%, 55% 67%, 28% 92%, 42% 57%, 0 63%);
+        transform: translate(45%, -50%) rotate(-8deg) scale(0.4);
+      }
+
+      .vehicle-stage.is-firing .muzzle-flash {
+        animation: flash 105ms steps(2, end);
+      }
+
+      .tracer {
+        --tracer-x: 0px;
+        --tracer-y: 0px;
+        --tracer-length: 0px;
+        --tracer-angle: 0rad;
+        position: fixed;
+        z-index: 35;
+        top: var(--tracer-y);
+        left: var(--tracer-x);
+        width: var(--tracer-length);
+        height: 2px;
+        opacity: 0;
+        pointer-events: none;
+        background: linear-gradient(90deg, #fff, #ffcd4a 28%, transparent 100%);
+        filter: drop-shadow(0 0 4px #ff9b23);
+        transform: rotate(var(--tracer-angle));
+        transform-origin: 0 50%;
+      }
+
+      .tracer.is-active {
+        animation: tracer 100ms linear;
+      }
+
+      .infantry-projectiles {
+        position: fixed;
+        z-index: 34;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .infantry-projectile {
+        position: absolute;
+        width: clamp(0.8rem, 1.5vw, 1.4rem);
+        height: 3px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #ff9b23, #fff 45%, #fff7a8 72%, transparent);
+        box-shadow: 0 0 4px #ff9b23, 0 0 8px rgb(255 205 74 / 72%);
+        transform: translate(-50%, -50%);
+      }
+
+      .mounted-note {
+        position: absolute;
+        z-index: 20;
+        right: clamp(1.2rem, 4vw, 4rem);
+        bottom: clamp(1rem, 3vw, 2.2rem);
+        display: none;
+        margin: 0;
+        color: var(--army);
+        font-size: 0.65rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      .scene.is-mounted {
+        cursor: none;
+      }
+
+      .scene.is-mounted .mounted-note {
+        display: block;
+      }
+
+      @keyframes recoil {
+        0% { translate: 0; }
+        35% { translate: -7px 0; }
+        100% { translate: 0; }
+      }
+
+      @keyframes flash {
+        0%, 100% { opacity: 0; transform: translate(45%, -50%) rotate(-8deg) scale(0.35); }
+        18%, 68% { opacity: 1; transform: translate(45%, -50%) rotate(-8deg) scale(1); }
+      }
+
+      @keyframes tracer {
+        0% { opacity: 1; }
+        100% { opacity: 0; }
+      }
+
+      @keyframes deny {
+        50% { transform: translateX(-0.45rem); }
+      }
+
+      @keyframes reload-progress {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+
+      @keyframes player-hit {
+        0%,
+        100% {
+          filter: none;
+          translate: 0;
+        }
+        40% {
+          filter: sepia(1) saturate(5) hue-rotate(325deg);
+          translate: -0.45rem 0;
+        }
+      }
+
+      @media (max-width: 760px) {
+        :root {
+          --ground-y: 5.5rem;
+          --soldier-width: min(44vw, 300px);
+          --vehicle-width: min(70vw, 480px);
+          --zombie-width: min(25vw, 150px);
+        }
+
+        .hud h1 {
+          font-size: 2.6rem;
+        }
+
+        .hud__meta,
+        .mode-chip span,
+        .controls__divider,
+        .controls .optional {
+          display: none;
+        }
+
+        .mode-chip {
+          min-width: auto;
+          padding: 0.6rem 0.75rem;
+        }
+
+        .ammo-meter {
+          top: 4.8rem;
+          width: 8.5rem;
+          padding: 0.55rem 0.65rem;
+        }
+
+        .health-meter {
+          top: 9.4rem;
+          width: 8.5rem;
+          padding: 0.55rem 0.65rem;
+        }
+
+        .vehicle-stage {
+          right: -7vw;
+        }
+
+        .entry-prompt {
+          right: 24vw;
+          bottom: calc(var(--ground-y) + 34vw);
+        }
+
+        .controls {
+          gap: 0.35rem;
+          font-size: 0.58rem;
+        }
+
+        .mounted-note {
+          display: none !important;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          scroll-behavior: auto !important;
+          animation-duration: 1ms !important;
+          animation-iteration-count: 1 !important;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="scene" id="scene">
+      <header class="hud">
+        <p class="hud__eyebrow">Fordonsstation 06</p>
+        <h1>Mount up.</h1>
+        <p class="hud__meta">Infanteri → skytt / fordon 66855</p>
+      </header>
+
+      <div class="mode-chip" aria-live="polite">
+        <span>Aktiv roll</span>
+        <strong id="modeLabel">Infanteri</strong>
+      </div>
+
+      <div class="ammo-meter" id="ammoMeter" aria-live="polite">
+        <div class="ammo-meter__row">
+          <span>Ammo</span>
+          <strong><span id="ammoCount">30</span> / 30</strong>
+        </div>
+        <div class="ammo-meter__bar" aria-hidden="true"></div>
+        <small id="ammoStatus">R · Ladda om</small>
+      </div>
+
+      <div class="health-meter" id="healthMeter" aria-live="polite">
+        <span>Hälsa</span>
+        <strong><span id="healthCount">3</span> / 3</strong>
+      </div>
+
+      <div class="world">
+        <figure class="zombie-stage" id="zombieStage" aria-label="Patrullerande zombie, två träffar kvar">
+          <img
+            class="zombie"
+            id="zombie"
+            src="zombie_segments/walk_loop/transparent_frames/zombie_000001.png"
+            alt="Fientlig zombie"
+            width="720"
+            height="1280"
+            decoding="async"
+            draggable="false"
+          />
+        </figure>
+
+        <figure class="vehicle-stage" id="vehicleStage" aria-label="Parkerat militärfordon">
+          <img
+            class="vehicle vehicle--still"
+            id="vehicleStill"
+            src="Car_still.png"
+            alt="Parkerat grönt militärfordon"
+            width="1538"
+            height="1023"
+            draggable="false"
+          />
+          <img
+            class="vehicle vehicle--animated"
+            id="vehicleAnimated"
+            src="carshooting_animation/transparent_frames/car_000001.png"
+            alt="Militärfordon med soldat vid vapnet"
+            width="1024"
+            height="576"
+            decoding="async"
+            draggable="false"
+          />
+          <div class="vehicle-driving" id="vehicleDriving" aria-hidden="true"></div>
+          <span class="muzzle-flash" aria-hidden="true"></span>
+        </figure>
+
+        <figure class="soldier-stage" id="soldierStage" aria-label="Soldat i en loopande idle-animation">
+          <img
+            class="soldier"
+            id="soldier"
+            src="frames_normalized/transparent_frames/runner_000001.png"
+            alt="Animerad soldat"
+            width="1280"
+            height="680"
+            decoding="async"
+            draggable="false"
+          />
+        </figure>
+      </div>
+
+      <div class="entry-prompt" id="entryPrompt" hidden><kbd>E</kbd> Hoppa in</div>
+      <div class="crosshair" id="crosshair" aria-hidden="true"></div>
+      <div class="tracer" id="tracer" aria-hidden="true"></div>
+      <div class="infantry-projectiles" id="infantryProjectiles" aria-hidden="true"></div>
+
+      <p class="controls">
+        <kbd>A</kbd> Vänster <kbd>D</kbd> Höger
+        <span class="controls__divider"></span>
+        <kbd>E</kbd> In / ur
+        <kbd>R</kbd> Ladda om
+        <span class="optional"><kbd>Mouse 1</kbd> Sikta / skjut</span>
+      </p>
+      <p class="mounted-note">Mus = sikte · Mouse 1 = eld · R = ladda · E = lämna fordon</p>
+    </main>
+
+    <script src="game.js"></script>
+    <script>
+      const idleSequence = [1, 2, 3, 4, 4, 3, 2, 1];
+      const frameRoot = 'frames_normalized/transparent_frames/runner_';
+      const vehicleFrameRoot = 'carshooting_animation/transparent_frames/car_';
+      const reloadFrameRoot = 'reload_animation/transparent_frames/reload_';
+      const zombieFrameRoots = {
+        walk: 'zombie_segments/walk_loop/transparent_frames/zombie_',
+        hit: 'zombie_segments/hit_reaction/transparent_frames/zombie_',
+        death: 'zombie_segments/death/transparent_frames/zombie_',
+        dead: 'zombie_segments/dead_hold/transparent_frames/zombie_',
+        attack1: 'zombie_segments/attack_1/transparent_frames/zombie_',
+        attack2: 'zombie_segments/attack_2/transparent_frames/zombie_',
+      };
+      const scene = document.querySelector('#scene');
+      const soldier = document.querySelector('#soldier');
+      const soldierStage = document.querySelector('#soldierStage');
+      const vehicleStage = document.querySelector('#vehicleStage');
+      const vehicleAnimated = document.querySelector('#vehicleAnimated');
+      const vehicleDriving = document.querySelector('#vehicleDriving');
+      const zombie = document.querySelector('#zombie');
+      const zombieStage = document.querySelector('#zombieStage');
+      const entryPrompt = document.querySelector('#entryPrompt');
+      const modeLabel = document.querySelector('#modeLabel');
+      const ammoMeter = document.querySelector('#ammoMeter');
+      const ammoCount = document.querySelector('#ammoCount');
+      const ammoStatus = document.querySelector('#ammoStatus');
+      const healthCount = document.querySelector('#healthCount');
+      const crosshair = document.querySelector('#crosshair');
+      const tracer = document.querySelector('#tracer');
+      const infantryProjectiles = document.querySelector('#infantryProjectiles');
+      const activeKeys = new Set();
+      const movementSpeed = 260;
+      const vehicleSpeed = 210;
+      const runningFrameDuration = 1000 / 24;
+      const combatFrameDuration = 1000 / 24;
+      const idleFrameDuration = 180;
+      const driveFrameDuration = 90;
+      const zombieFrameDuration = 1000 / 24;
+      const zombieAttackFrameDuration = 1000 / 12;
+      const zombieSpeed = 34;
+      const zombieAttackRange = 100;
+      const reloadDuration = 1150;
+      let idleIndex = 0;
+      let runningFrame = 1;
+      let position = Math.min(190, window.innerWidth * 0.18);
+      let facing = 1;
+      let combat = null;
+      let mounted = false;
+      let firing = false;
+      let firingTimer = null;
+      let reloadTimer = null;
+      let ammoState = ArmyGame.createAmmoState();
+      let reloadStartedAt = null;
+      let reloadFrame = 1;
+      let aimFrame = 1;
+      let aimRow = 0;
+      let driveFrame = 1;
+      let vehiclePosition = null;
+      let pointerX = window.innerWidth * 0.75;
+      let pointerY = window.innerHeight * 0.38;
+      let zombieState = ArmyGame.createZombieState();
+      let zombiePosition = window.innerWidth * 0.52;
+      let zombieDirection = -1;
+      let playerHealth = 3;
+      let lastTime = performance.now();
+      let lastFrameChange = lastTime;
+      let lastDriveFrameChange = lastTime;
+      let lastZombieFrameChange = lastTime;
+      const projectiles = [];
+
+      function updateAmmoMeter() {
+        ammoCount.textContent = ammoState.rounds;
+        ammoStatus.textContent = ammoState.reloading
+          ? 'Laddar…'
+          : ammoState.rounds === 0
+            ? 'Tomt · tryck R'
+            : 'R · Ladda om';
+        ammoMeter.style.setProperty(
+          '--ammo-level',
+          `${(ammoState.rounds / ArmyGame.MAGAZINE_SIZE) * 100}%`,
+        );
+        ammoMeter.classList.toggle('is-empty', ammoState.rounds === 0);
+        ammoMeter.classList.toggle('is-reloading', ammoState.reloading);
+      }
+
+      function updatePlayerHealth() {
+        healthCount.textContent = playerHealth;
+        if (playerHealth === 0) {
+          modeLabel.textContent = 'Nedkämpad';
+          activeKeys.clear();
+          combat = null;
+        }
+      }
+
+      const frameSource = (frame) => `${frameRoot}${String(frame).padStart(6, '0')}.png`;
+      const vehicleFrameSource = (frame) =>
+        `${vehicleFrameRoot}${String(frame).padStart(6, '0')}.png`;
+      const zombieFrameSource = (state) =>
+        `${zombieFrameRoots[state.phase]}${String(state.frame).padStart(6, '0')}.png`;
+      const reloadFrameSource = (frame) =>
+        `${reloadFrameRoot}${String(frame).padStart(6, '0')}.png`;
+
+      for (let frame = 1; frame <= ArmyGame.RUN_FRAME_COUNT; frame += 1) {
+        const image = new Image();
+        image.src = frameSource(frame);
+      }
+
+      const combatFrames = [
+        ...Array.from({ length: 22 }, (_, index) => 109 + index),
+        ...Array.from({ length: 41 }, (_, index) => 145 + index),
+        186,
+        187,
+        188,
+      ];
+
+      for (const frame of combatFrames) {
+        const image = new Image();
+        image.src = frameSource(frame);
+      }
+
+      for (let frame = 1; frame <= ArmyGame.RELOAD_FRAME_COUNT; frame += 1) {
+        const image = new Image();
+        image.src = reloadFrameSource(frame);
+      }
+
+      for (const frame of [1, 113, 225]) {
+        const image = new Image();
+        image.src = vehicleFrameSource(frame);
+      }
+
+      for (const [phase, count] of [
+        ['walk', ArmyGame.ZOMBIE_WALK_FRAME_COUNT],
+        ['hit', ArmyGame.ZOMBIE_HIT_FRAME_COUNT],
+        ['death', ArmyGame.ZOMBIE_DEATH_FRAME_COUNT],
+        ['dead', 1],
+        ['attack1', ArmyGame.ZOMBIE_ATTACK_1_FRAME_COUNT],
+        ['attack2', ArmyGame.ZOMBIE_ATTACK_2_FRAME_COUNT],
+      ]) {
+        for (let frame = 1; frame <= count; frame += 1) {
+          const image = new Image();
+          image.src = `${zombieFrameRoots[phase]}${String(frame).padStart(6, '0')}.png`;
+        }
+      }
+
+      function updateZombieSprite() {
+        zombie.src = zombieFrameSource(zombieState);
+        zombieStage.classList.toggle('is-dead', zombieState.phase === 'dead');
+        zombieStage.setAttribute(
+          'aria-label',
+          zombieState.phase === 'dead'
+            ? 'Nedskjuten zombie'
+            : zombieState.phase === 'attack1' || zombieState.phase === 'attack2'
+              ? 'Zombie utför närstridsattack'
+              : `Fientlig zombie, ${zombieState.health} träff${zombieState.health === 1 ? '' : 'ar'} kvar`,
+        );
+      }
+
+      function shootZombieAt(x, y) {
+        if (!ArmyGame.shotHitsTarget(x, y, zombieStage.getBoundingClientRect())) return false;
+        const nextState = ArmyGame.hitZombie(zombieState);
+        if (nextState === zombieState) return false;
+        zombieState = nextState;
+        lastZombieFrameChange = performance.now();
+        updateZombieSprite();
+        return true;
+      }
+
+      function spawnInfantryProjectile() {
+        const bounds = soldierStage.getBoundingClientRect();
+        const projectile = document.createElement('span');
+        const x = bounds.left + bounds.width * (facing > 0 ? 0.67 : 0.33);
+        const y = bounds.top + bounds.height * 0.31;
+        projectile.className = 'infantry-projectile';
+        projectile.style.left = `${x}px`;
+        projectile.style.top = `${y}px`;
+        projectile.style.rotate = facing > 0 ? '0deg' : '180deg';
+        infantryProjectiles.append(projectile);
+        projectiles.push({ element: projectile, x, y, direction: facing, speed: 1050 });
+      }
+
+      function updateInfantryProjectiles(deltaSeconds) {
+        const targetBounds = zombieStage.getBoundingClientRect();
+        for (let index = projectiles.length - 1; index >= 0; index -= 1) {
+          const projectile = projectiles[index];
+          const nextX = projectile.x + projectile.direction * projectile.speed * deltaSeconds;
+          const hitsZombie =
+            ArmyGame.zombieCanTakeHit(zombieState) &&
+            ArmyGame.projectileHitsTarget(projectile, nextX, targetBounds);
+
+          if (hitsZombie) {
+            zombieState = ArmyGame.hitZombie(zombieState);
+            lastZombieFrameChange = performance.now();
+            updateZombieSprite();
+          }
+
+          if (hitsZombie || nextX < -40 || nextX > window.innerWidth + 40) {
+            projectile.element.remove();
+            projectiles.splice(index, 1);
+            continue;
+          }
+
+          projectile.x = nextX;
+          projectile.element.style.left = `${nextX}px`;
+        }
+      }
+
+      function vehicleEntry() {
+        const bounds = vehicleStage.getBoundingClientRect();
+        return {
+          x: bounds.left + bounds.width * 0.23,
+          distance: Math.max(105, bounds.width * 0.14),
+        };
+      }
+
+      function updateAim() {
+        aimFrame = ArmyGame.vehicleAimFrame(pointerY, window.innerHeight);
+        aimRow = ArmyGame.vehicleAimRow(pointerY, window.innerHeight);
+        const muzzle = ArmyGame.muzzlePointForAimRow(aimRow);
+        vehicleAnimated.src = vehicleFrameSource(aimFrame);
+        vehicleStage.style.setProperty('--muzzle-right', `${(1 - muzzle.x) * 100}%`);
+        vehicleStage.style.setProperty('--muzzle-top', `${muzzle.y * 100}%`);
+        crosshair.style.setProperty('--crosshair-x', `${pointerX}px`);
+        crosshair.style.setProperty('--crosshair-y', `${pointerY}px`);
+        updateDriveAimFrame();
+      }
+
+      function updateDriveAimFrame() {
+        const { column, row } = ArmyGame.driveAimCell(driveFrame, aimRow);
+        const x = column * (100 / 3);
+        const y = row * (100 / 3);
+        vehicleDriving.style.backgroundPosition = `${x}% ${y}%`;
+      }
+
+      function setMounted(nextMounted) {
+        mounted = nextMounted;
+        combat = null;
+        activeKeys.clear();
+        scene.classList.toggle('is-mounted', mounted);
+        soldierStage.classList.toggle('is-mounted', mounted);
+        vehicleStage.classList.toggle('is-mounted', mounted);
+        crosshair.classList.toggle('is-active', mounted);
+        modeLabel.textContent = mounted ? 'Fordonskytt' : 'Infanteri';
+        entryPrompt.hidden = true;
+
+        if (mounted) {
+          if (vehiclePosition === null) {
+            const bounds = vehicleStage.getBoundingClientRect();
+            vehiclePosition = bounds.left + bounds.width / 2;
+          }
+          vehicleStage.classList.add('has-position');
+          vehicleStage.style.setProperty('--vehicle-x', `${vehiclePosition}px`);
+          updateDriveAimFrame();
+          updateAim();
+          return;
+        }
+
+        stopFiring();
+        const entry = vehicleEntry();
+        position = Math.max(70, entry.x - Math.min(160, window.innerWidth * 0.12));
+        soldier.src = frameSource(idleSequence[0]);
+        idleIndex = 0;
+      }
+
+      function retrigger(element, className) {
+        element.classList.remove(className);
+        void element.offsetWidth;
+        element.classList.add(className);
+      }
+
+      function fireShot() {
+        if (!mounted || !ArmyGame.canFire(ammoState)) {
+          stopFiring();
+          return;
+        }
+
+        ammoState = ArmyGame.consumeRound(ammoState);
+        updateAmmoMeter();
+
+        retrigger(vehicleStage, 'is-firing');
+        retrigger(crosshair, 'is-firing');
+
+        const vehicleBounds = vehicleStage.getBoundingClientRect();
+        const muzzle = ArmyGame.muzzlePointForAimRow(aimRow);
+        const startX = vehicleBounds.left + vehicleBounds.width * muzzle.x;
+        const startY = vehicleBounds.top + vehicleBounds.height * muzzle.y;
+        const deltaX = pointerX - startX;
+        const deltaY = pointerY - startY;
+        tracer.style.setProperty('--tracer-x', `${startX}px`);
+        tracer.style.setProperty('--tracer-y', `${startY}px`);
+        tracer.style.setProperty('--tracer-length', `${Math.hypot(deltaX, deltaY)}px`);
+        tracer.style.setProperty('--tracer-angle', `${Math.atan2(deltaY, deltaX)}rad`);
+        retrigger(tracer, 'is-active');
+        shootZombieAt(pointerX, pointerY);
+
+        window.setTimeout(() => {
+          vehicleStage.classList.remove('is-firing');
+          crosshair.classList.remove('is-firing');
+          tracer.classList.remove('is-active');
+        }, 125);
+      }
+
+      function startFiring() {
+        if (firing || !mounted || !ArmyGame.canFire(ammoState)) return;
+        firing = true;
+        fireShot();
+        if (firing) firingTimer = window.setInterval(fireShot, 145);
+      }
+
+      function stopFiring() {
+        firing = false;
+        if (firingTimer !== null) {
+          window.clearInterval(firingTimer);
+          firingTimer = null;
+        }
+        vehicleStage.classList.remove('is-firing');
+        crosshair.classList.remove('is-firing');
+      }
+
+      function reloadWeapon() {
+        const nextAmmoState = ArmyGame.beginReload(ammoState);
+        if (nextAmmoState === ammoState) return;
+
+        ammoState = nextAmmoState;
+        stopFiring();
+        combat = null;
+        reloadStartedAt = performance.now();
+        reloadFrame = 1;
+        if (!mounted) {
+          soldier.src = reloadFrameSource(reloadFrame);
+        }
+        updateAmmoMeter();
+
+        if (reloadTimer !== null) window.clearTimeout(reloadTimer);
+        reloadTimer = window.setTimeout(() => {
+          ammoState = ArmyGame.completeReload(ammoState);
+          reloadTimer = null;
+          reloadStartedAt = null;
+          reloadFrame = 1;
+          if (!mounted) {
+            idleIndex = 0;
+            soldier.src = frameSource(idleSequence[idleIndex]);
+            lastFrameChange = performance.now();
+          }
+          updateAmmoMeter();
+        }, reloadDuration);
+      }
+
+      window.addEventListener('keydown', (event) => {
+        const key = event.key.toLowerCase();
+        if (key === 'a' || key === 'd') {
+          event.preventDefault();
+          activeKeys.add(key);
+        }
+
+        if (key === 'r' && !event.repeat) {
+          event.preventDefault();
+          reloadWeapon();
+        }
+
+        if (key === 'e' && !event.repeat) {
+          event.preventDefault();
+          if (mounted) {
+            setMounted(false);
+            return;
+          }
+
+          const entry = vehicleEntry();
+          if (ArmyGame.canEnterVehicle(position, entry.x, entry.distance)) {
+            setMounted(true);
+          } else {
+            entryPrompt.hidden = false;
+            entryPrompt.innerHTML = '<kbd>E</kbd> Gå närmare';
+            retrigger(entryPrompt, 'is-denied');
+          }
+        }
+      });
+
+      window.addEventListener('keyup', (event) => {
+        activeKeys.delete(event.key.toLowerCase());
+      });
+
+      window.addEventListener('mousemove', (event) => {
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (mounted) updateAim();
+      });
+
+      window.addEventListener('mousedown', (event) => {
+        if (event.button !== 0) return;
+        event.preventDefault();
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+
+        if (mounted) {
+          startFiring();
+          return;
+        }
+
+        if (combat || !ArmyGame.canFire(ammoState)) return;
+        combat = ArmyGame.beginCombat();
+        soldier.src = frameSource(combat.frame);
+        lastFrameChange = performance.now();
+      });
+
+      window.addEventListener('mouseup', (event) => {
+        if (event.button !== 0) return;
+
+        if (mounted) {
+          stopFiring();
+          return;
+        }
+
+        combat = null;
+        idleIndex = 0;
+        soldier.src = frameSource(idleSequence[idleIndex]);
+        lastFrameChange = performance.now();
+      });
+
+      window.addEventListener('blur', () => {
+        activeKeys.clear();
+        combat = null;
+        stopFiring();
+      });
+
+      window.addEventListener('resize', () => {
+        position = Math.min(window.innerWidth - 60, Math.max(60, position));
+        if (mounted) updateAim();
+      });
+
+      function animate(time) {
+        const deltaSeconds = Math.min((time - lastTime) / 1000, 0.05);
+        const direction = playerHealth > 0 ? ArmyGame.directionFromKeys(activeKeys) : 0;
+        const bounds = { min: 60, max: window.innerWidth - 60 };
+        lastTime = time;
+
+        if (
+          zombieState.phase === 'walk' &&
+          ArmyGame.zombieCanAttack(
+            zombiePosition,
+            position,
+            zombieAttackRange,
+            mounted,
+            playerHealth,
+          )
+        ) {
+          zombieDirection = position < zombiePosition ? -1 : 1;
+          zombieState = ArmyGame.beginZombieAttack(zombieState);
+          updateZombieSprite();
+          lastZombieFrameChange = time;
+        } else if (zombieState.phase === 'walk') {
+          const zombieBounds = {
+            min: Math.max(120, window.innerWidth * 0.34),
+            max: Math.min(window.innerWidth - 120, window.innerWidth * 0.62),
+          };
+          zombiePosition = ArmyGame.movePosition(
+            zombiePosition,
+            zombieDirection,
+            deltaSeconds,
+            zombieSpeed,
+            zombieBounds,
+          );
+          if (zombiePosition <= zombieBounds.min) zombieDirection = 1;
+          if (zombiePosition >= zombieBounds.max) zombieDirection = -1;
+        }
+
+        const isZombieAttacking =
+          zombieState.phase === 'attack1' || zombieState.phase === 'attack2';
+        const currentZombieFrameDuration = isZombieAttacking
+          ? zombieAttackFrameDuration
+          : zombieFrameDuration;
+        if (
+          zombieState.phase !== 'dead' &&
+          time - lastZombieFrameChange >= currentZombieFrameDuration
+        ) {
+          const previousZombieState = zombieState;
+          zombieState = ArmyGame.advanceZombie(zombieState);
+          if (
+            ArmyGame.zombieAttackLands(previousZombieState, zombieState) &&
+            ArmyGame.zombieCanAttack(
+              zombiePosition,
+              position,
+              zombieAttackRange,
+              mounted,
+              playerHealth,
+            )
+          ) {
+            playerHealth = ArmyGame.applyZombieDamage(playerHealth);
+            retrigger(soldierStage, 'is-hit');
+            updatePlayerHealth();
+          }
+          updateZombieSprite();
+          lastZombieFrameChange = time;
+        }
+
+        updateInfantryProjectiles(deltaSeconds);
+
+        if (!mounted && ammoState.reloading) {
+          const nextReloadFrame = ArmyGame.reloadFrameAtElapsed(
+            time - (reloadStartedAt ?? time),
+            reloadDuration,
+          );
+          if (nextReloadFrame !== reloadFrame) {
+            reloadFrame = nextReloadFrame;
+            soldier.src = reloadFrameSource(reloadFrame);
+          }
+        } else if (mounted && direction !== 0) {
+          const vehicleBounds = vehicleStage.getBoundingClientRect();
+          const halfWidth = vehicleBounds.width / 2;
+          const vehicleBoundsX = {
+            min: halfWidth * 0.72,
+            max: window.innerWidth - halfWidth * 0.72,
+          };
+          vehiclePosition = ArmyGame.movePosition(
+            vehiclePosition,
+            direction,
+            deltaSeconds,
+            vehicleSpeed,
+            vehicleBoundsX,
+          );
+          vehicleStage.style.setProperty('--vehicle-x', `${vehiclePosition}px`);
+
+          if (time - lastDriveFrameChange >= driveFrameDuration) {
+            driveFrame = ArmyGame.nextDriveFrame(driveFrame, direction);
+            updateDriveAimFrame();
+            lastDriveFrameChange = time;
+          }
+        } else if (!mounted && combat) {
+          if (time - lastFrameChange >= combatFrameDuration) {
+            const previousCombat = combat;
+            combat = ArmyGame.advanceCombatWithAmmo(combat, ammoState);
+            soldier.src = frameSource(combat.frame);
+            if (
+              ArmyGame.combatFiresProjectile(previousCombat, combat) &&
+              ArmyGame.canFire(ammoState)
+            ) {
+              ammoState = ArmyGame.consumeRound(ammoState);
+              updateAmmoMeter();
+              spawnInfantryProjectile();
+            }
+            lastFrameChange = time;
+          }
+        } else if (!mounted && direction !== 0) {
+          facing = direction;
+          position = ArmyGame.movePosition(position, direction, deltaSeconds, movementSpeed, bounds);
+
+          if (time - lastFrameChange >= runningFrameDuration) {
+            runningFrame = ArmyGame.nextRunFrame(runningFrame);
+            soldier.src = frameSource(runningFrame);
+            lastFrameChange = time;
+          }
+        } else if (!mounted && time - lastFrameChange >= idleFrameDuration) {
+          idleIndex = (idleIndex + 1) % idleSequence.length;
+          soldier.src = frameSource(idleSequence[idleIndex]);
+          lastFrameChange = time;
+        }
+
+        vehicleStage.classList.toggle('is-driving', mounted && direction !== 0);
+
+        if (!mounted) {
+          const entry = vehicleEntry();
+          const isNear = ArmyGame.canEnterVehicle(position, entry.x, entry.distance);
+          entryPrompt.hidden = !isNear;
+          if (isNear) entryPrompt.innerHTML = '<kbd>E</kbd> Hoppa in';
+        }
+
+        soldier.style.setProperty('--facing', facing);
+        soldierStage.style.setProperty('--player-x', `${position}px`);
+        zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
+        zombieStage.style.setProperty('--zombie-facing', zombieDirection);
+        requestAnimationFrame(animate);
+      }
+
+      soldierStage.style.setProperty('--player-x', `${position}px`);
+      zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
+      updateZombieSprite();
+      updateAmmoMeter();
+      updatePlayerHealth();
+      updateDriveAimFrame();
+      updateAim();
+      requestAnimationFrame(animate);
+    </script>
+  </body>
+</html>

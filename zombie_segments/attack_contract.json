@@ -1,0 +1,32 @@
+{
+  "fps": 12,
+  "playback": "once_then_walk",
+  "contact_frame": 4,
+  "frame_count": 6,
+  "variants": {
+    "attack_1": {
+      "frames": [
+        "attack1_anticipation.png",
+        "attack1_mid.png",
+        "attack1_contact.png",
+        "attack1_contact.png",
+        "attack1_mid.png",
+        "attack1_anticipation.png"
+      ],
+      "entry": "walk",
+      "exit": "walk"
+    },
+    "attack_2": {
+      "frames": [
+        "attack2_anticipation.png",
+        "attack2_mid.png",
+        "attack2_contact.png",
+        "attack2_contact.png",
+        "attack2_mid.png",
+        "attack2_anticipation.png"
+      ],
+      "entry": "walk",
+      "exit": "walk"
+    }
+  }
+}

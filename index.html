@@ -837,6 +837,7 @@
       const zombieSpeed = 34;
       const zombieAttackRange = 100;
       const reloadDuration = 1150;
+      const zombieSpawnInterval = 30000;
       const soldierSpawnX = Math.min(140, window.innerWidth * 0.12);
       const zombieSpawnX = Math.max(40, window.innerWidth * 0.1);
       let idleIndex = 0;
@@ -865,6 +866,7 @@
       let lastFrameChange = lastTime;
       let lastDriveFrameChange = lastTime;
       let lastZombieFrameChange = lastTime;
+      let nextZombieSpawnAt = lastTime + zombieSpawnInterval;
       const projectiles = [];
 
       function updateAmmoMeter() {
@@ -955,6 +957,18 @@
               ? 'Zombie utför närstridsattack'
               : `Fientlig zombie, ${zombieState.health} träff${zombieState.health === 1 ? '' : 'ar'} kvar`,
         );
+      }
+
+      function spawnZombie(time) {
+        zombieState = ArmyGame.createZombieState();
+        zombiePosition = zombieSpawnX;
+        zombieDirection = 1;
+        nextZombieSpawnAt = time + zombieSpawnInterval;
+        lastZombieFrameChange = time;
+        zombieStage.style.setProperty('--zombie-launch-x', '0px');
+        zombieStage.style.setProperty('--zombie-launch-y', '0px');
+        zombieStage.style.setProperty('--zombie-rotation', '0deg');
+        updateZombieSprite();
       }
 
       function shootZombieAt(x, y) {
@@ -1235,6 +1249,10 @@
         const bounds = { min: 60, max: window.innerWidth - 60 };
         lastTime = time;
 
+        if (time >= nextZombieSpawnAt) {
+          spawnZombie(time);
+        }
+
         if (
           zombieState.phase === 'walk' &&
           ArmyGame.zombieCanAttack(
@@ -1399,9 +1417,9 @@
         }
 
         soldier.style.setProperty('--facing', facing);
-      soldierStage.style.setProperty('--player-x', `${position}px`);
-      zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
-      zombieStage.style.setProperty('--zombie-facing', zombieDirection);
+        soldierStage.style.setProperty('--player-x', `${position}px`);
+        zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
+        zombieStage.style.setProperty('--zombie-facing', zombieDirection);
         zombieStage.style.setProperty(
           '--zombie-launch-x',
           zombieState.phase === 'launched' ? `${zombieState.launchOffsetX}px` : '0px',
@@ -1419,6 +1437,10 @@
 
       soldierStage.style.setProperty('--player-x', `${position}px`);
       zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
+      zombieStage.style.setProperty('--zombie-facing', zombieDirection);
+      zombieStage.style.setProperty('--zombie-launch-x', '0px');
+      zombieStage.style.setProperty('--zombie-launch-y', '0px');
+      zombieStage.style.setProperty('--zombie-rotation', '0deg');
       updateZombieSprite();
       updateAmmoMeter();
       updatePlayerHealth();

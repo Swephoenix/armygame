@@ -225,6 +225,16 @@ test('the car spawns farther right and zombies spawn left to chase the soldier',
   assert.match(html, /zombieDirection\s*=\s*position\s*<\s*zombiePosition\s*\?\s*-1\s*:\s*1;/);
 });
 
+test('a zombie respawns every 30 seconds', async () => {
+  const html = await readFile(pagePath, 'utf8');
+
+  assert.match(html, /const\s+zombieSpawnInterval\s*=\s*30000;/);
+  assert.match(html, /let\s+nextZombieSpawnAt\s*=\s*lastTime\s*\+\s*zombieSpawnInterval;/);
+  assert.match(html, /if\s*\(time\s*>=\s*nextZombieSpawnAt\)\s*\{\s*spawnZombie\(time\);\s*\}/);
+  assert.match(html, /function spawnZombie\s*\(time\)\s*\{/);
+  assert.match(html, /nextZombieSpawnAt\s*=\s*time\s*\+\s*zombieSpawnInterval;/);
+});
+
 test('infantry projectiles are spawned from the rifle on matching firing frames', async () => {
   const html = await readFile(pagePath, 'utf8');
 

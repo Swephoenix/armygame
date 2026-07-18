@@ -289,6 +289,9 @@
       .zombie-stage {
         --zombie-x: 52vw;
         --zombie-facing: -1;
+        --zombie-launch-x: 0px;
+        --zombie-launch-y: 0px;
+        --zombie-rotation: 0deg;
         position: absolute;
         z-index: 3;
         bottom: var(--ground-y);
@@ -297,8 +300,12 @@
         height: calc(var(--zombie-width) * 1.7778);
         margin: 0;
         pointer-events: none;
-        transform: translateX(-50%);
-        will-change: left;
+        transform: translateX(calc(-50% + var(--zombie-launch-x))) translateY(var(--zombie-launch-y));
+        will-change: left, transform;
+      }
+
+      .zombie-stage.is-launched {
+        z-index: 5;
       }
 
       .zombie {
@@ -308,7 +315,7 @@
         object-fit: contain;
         user-select: none;
         filter: drop-shadow(0 10px 8px rgb(0 0 0 / 17%));
-        transform: translateY(9.3%) scaleX(var(--zombie-facing));
+        transform: translateY(9.3%) rotate(var(--zombie-rotation)) scaleX(var(--zombie-facing));
         transform-origin: 50% 78%;
         -webkit-user-drag: none;
       }
@@ -796,6 +803,7 @@
         walk: 'zombie_segments/walk_loop/transparent_frames/zombie_',
         hit: 'zombie_segments/hit_reaction/transparent_frames/zombie_',
         death: 'zombie_segments/death/transparent_frames/zombie_',
+        launched: 'zombie_segments/death/transparent_frames/zombie_',
         dead: 'zombie_segments/dead_hold/transparent_frames/zombie_',
         attack1: 'zombie_segments/attack_1/transparent_frames/zombie_',
         attack2: 'zombie_segments/attack_2/transparent_frames/zombie_',
@@ -934,10 +942,13 @@
       function updateZombieSprite() {
         zombie.src = zombieFrameSource(zombieState);
         zombieStage.classList.toggle('is-dead', zombieState.phase === 'dead');
+        zombieStage.classList.toggle('is-launched', zombieState.phase === 'launched');
         zombieStage.setAttribute(
           'aria-label',
           zombieState.phase === 'dead'
             ? 'Nedskjuten zombie'
+            : zombieState.phase === 'launched'
+              ? 'Zombie slungas iväg av bilen'
             : zombieState.phase === 'attack1' || zombieState.phase === 'attack2'
               ? 'Zombie utför närstridsattack'
               : `Fientlig zombie, ${zombieState.health} träff${zombieState.health === 1 ? '' : 'ar'} kvar`,
@@ -1252,6 +1263,38 @@
           if (zombiePosition >= zombieBounds.max) zombieDirection = -1;
         }
 
+        if (
+          mounted &&
+          direction !== 0 &&
+          zombieState.phase !== 'dead' &&
+          zombieState.phase !== 'launched' &&
+          ArmyGame.vehicleHitsZombie(
+            vehicleStage.getBoundingClientRect(),
+            zombieStage.getBoundingClientRect(),
+          )
+        ) {
+          zombieDirection = direction;
+          zombieState = ArmyGame.beginZombieLaunch(zombieState, direction);
+          updateZombieSprite();
+          lastZombieFrameChange = time;
+        }
+
+        if (zombieState.phase === 'launched') {
+          zombieState = ArmyGame.advanceZombieLaunch(zombieState, deltaSeconds);
+          const launchX = zombiePosition + zombieState.launchOffsetX;
+          const launchY = zombieState.launchOffsetY;
+          const offscreen =
+            launchX < -200 ||
+            launchX > window.innerWidth + 200 ||
+            launchY > window.innerHeight + 200 ||
+            launchY < -window.innerHeight * 0.75;
+          if (offscreen) {
+            zombiePosition = launchX;
+            zombieState = { phase: 'dead', frame: 1, health: 0 };
+            updateZombieSprite();
+          }
+        }
+
         const isZombieAttacking =
           zombieState.phase === 'attack1' || zombieState.phase === 'attack2';
         const currentZombieFrameDuration = isZombieAttacking
@@ -1356,6 +1399,18 @@
         soldierStage.style.setProperty('--player-x', `${position}px`);
         zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
         zombieStage.style.setProperty('--zombie-facing', zombieDirection);
+        zombieStage.style.setProperty(
+          '--zombie-launch-x',
+          zombieState.phase === 'launched' ? `${zombieState.launchOffsetX}px` : '0px',
+        );
+        zombieStage.style.setProperty(
+          '--zombie-launch-y',
+          zombieState.phase === 'launched' ? `${zombieState.launchOffsetY}px` : '0px',
+        );
+        zombieStage.style.setProperty(
+          '--zombie-rotation',
+          zombieState.phase === 'launched' ? `${zombieState.launchRotation}deg` : '0deg',
+        );
         requestAnimationFrame(animate);
       }
 

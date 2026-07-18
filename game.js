@@ -22,6 +22,10 @@
   const ZOMBIE_ATTACK_1_FRAME_COUNT = 6;
   const ZOMBIE_ATTACK_2_FRAME_COUNT = 6;
   const ZOMBIE_ATTACK_CONTACT_FRAME = 4;
+  const ZOMBIE_LAUNCH_VELOCITY_X = 920;
+  const ZOMBIE_LAUNCH_VELOCITY_Y = -740;
+  const ZOMBIE_LAUNCH_GRAVITY = 1800;
+  const ZOMBIE_LAUNCH_ROTATION = 0;
   const SOLDIER_PROJECTILE_FRAMES = [146, 150, 154, 158, 162, 166, 170, 174, 178, 182];
   const MAGAZINE_SIZE = 30;
   const RELOAD_FRAME_COUNT = 4;
@@ -80,6 +84,60 @@
     };
   }
 
+  function vehicleHitsZombie(vehicleRect, zombieRect) {
+    const vehicleInsetX = vehicleRect.width * 0.08;
+    const vehicleInsetY = vehicleRect.height * 0.1;
+    const zombieInsetX = zombieRect.width * 0.1;
+    const zombieInsetY = zombieRect.height * 0.08;
+    const vehicleLeft = vehicleRect.left + vehicleInsetX;
+    const vehicleRight = vehicleRect.left + vehicleRect.width - vehicleInsetX;
+    const vehicleTop = vehicleRect.top + vehicleInsetY;
+    const vehicleBottom = vehicleRect.top + vehicleRect.height - vehicleInsetY;
+    const zombieLeft = zombieRect.left + zombieInsetX;
+    const zombieRight = zombieRect.left + zombieRect.width - zombieInsetX;
+    const zombieTop = zombieRect.top + zombieInsetY;
+    const zombieBottom = zombieRect.top + zombieRect.height - zombieInsetY;
+    return (
+      vehicleLeft < zombieRight &&
+      vehicleRight > zombieLeft &&
+      vehicleTop < zombieBottom &&
+      vehicleBottom > zombieTop
+    );
+  }
+
+  function beginZombieLaunch(zombie, direction) {
+    const launchDirection = direction < 0 ? -1 : 1;
+    return {
+      ...zombie,
+      phase: 'launched',
+      frame: 1,
+      health: 0,
+      launchDirection,
+      launchOffsetX: 0,
+      launchOffsetY: 0,
+      launchVelocityX: ZOMBIE_LAUNCH_VELOCITY_X * launchDirection,
+      launchVelocityY: ZOMBIE_LAUNCH_VELOCITY_Y,
+      launchRotation: ZOMBIE_LAUNCH_ROTATION,
+      launchGravity: ZOMBIE_LAUNCH_GRAVITY,
+    };
+  }
+
+  function advanceZombieLaunch(zombie, deltaSeconds) {
+    if (zombie.phase !== 'launched') return zombie;
+    const elapsed = Math.max(0, deltaSeconds);
+    const nextOffsetX = zombie.launchOffsetX + zombie.launchVelocityX * elapsed;
+    const nextOffsetY = zombie.launchOffsetY + zombie.launchVelocityY * elapsed;
+    const nextVelocityY = zombie.launchVelocityY + zombie.launchGravity * elapsed;
+    const nextRotation = zombie.launchRotation + zombie.launchDirection * 540 * elapsed;
+    return {
+      ...zombie,
+      launchOffsetX: nextOffsetX,
+      launchOffsetY: nextOffsetY,
+      launchVelocityY: nextVelocityY,
+      launchRotation: nextRotation,
+    };
+  }
+
   function zombieCanAttack(zombieX, soldierX, maxDistance, mounted, playerHealth) {
     return !mounted && playerHealth > 0 && Math.abs(zombieX - soldierX) <= maxDistance;
   }
@@ -118,6 +176,10 @@
       return zombie.frame >= frameCount
         ? { ...zombie, phase: 'walk', frame: 1 }
         : { ...zombie, frame: zombie.frame + 1 };
+    }
+
+    if (zombie.phase === 'launched') {
+      return zombie;
     }
 
     if (zombie.phase === 'death') {
@@ -275,13 +337,19 @@
     ZOMBIE_ATTACK_1_FRAME_COUNT,
     ZOMBIE_ATTACK_2_FRAME_COUNT,
     ZOMBIE_ATTACK_CONTACT_FRAME,
+    ZOMBIE_LAUNCH_GRAVITY,
+    ZOMBIE_LAUNCH_ROTATION,
+    ZOMBIE_LAUNCH_VELOCITY_X,
+    ZOMBIE_LAUNCH_VELOCITY_Y,
     ZOMBIE_HIT_FRAME_COUNT,
     ZOMBIE_WALK_FRAME_COUNT,
     advanceCombat,
     advanceCombatWithAmmo,
     advanceZombie,
+    advanceZombieLaunch,
     applyZombieDamage,
     beginZombieAttack,
+    beginZombieLaunch,
     beginReload,
     beginCombat,
     canFire,
@@ -301,6 +369,7 @@
     reloadFrameAtElapsed,
     hitZombie,
     shotHitsTarget,
+    vehicleHitsZombie,
     vehicleAimFrame,
     vehicleAimRow,
     zombieAttackLands,

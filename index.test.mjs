@@ -200,6 +200,19 @@ test('the zombie uses two six-frame melee attacks with a contact-timed player hi
   );
 });
 
+test('vehicle impacts launch zombies off the map with visible motion and rotation', async () => {
+  const html = await readFile(pagePath, 'utf8');
+
+  assert.match(html, /ArmyGame\.vehicleHitsZombie\s*\(/);
+  assert.match(html, /ArmyGame\.beginZombieLaunch\s*\(/);
+  assert.match(html, /ArmyGame\.advanceZombieLaunch\s*\(/);
+  assert.match(html, /launched:\s*'zombie_segments\/death\/transparent_frames\/zombie_'/);
+  assert.match(html, /--zombie-launch-x:/);
+  assert.match(html, /--zombie-launch-y:/);
+  assert.match(html, /--zombie-rotation:/);
+  assert.match(html, /Zombie slungas iväg av bilen/);
+});
+
 test('infantry projectiles are spawned from the rifle on matching firing frames', async () => {
   const html = await readFile(pagePath, 'utf8');
 

@@ -296,6 +296,41 @@ test('a zombie only starts melee while a living on-foot soldier is in range', ()
   assert.equal(zombieCanAttack(500, 590, 100, false, 0), false);
 });
 
+test('vehicle impact launches a zombie toward the map edge', () => {
+  const { advanceZombieLaunch, beginZombieLaunch, vehicleHitsZombie } = loadGame();
+  const vehicleRect = { left: 100, top: 100, width: 240, height: 120 };
+  const zombieRect = { left: 240, top: 118, width: 92, height: 140 };
+
+  assert.equal(vehicleHitsZombie(vehicleRect, zombieRect), true);
+  assert.equal(
+    vehicleHitsZombie(
+      { left: 100, top: 100, width: 240, height: 120 },
+      { left: 360, top: 118, width: 92, height: 140 },
+    ),
+    false,
+  );
+
+  const launched = beginZombieLaunch({ phase: 'walk', frame: 9, health: 2, nextAttack: 1 }, 1);
+  assert.deepEqual(launched, {
+    phase: 'launched',
+    frame: 1,
+    health: 0,
+    nextAttack: 1,
+    launchDirection: 1,
+    launchOffsetX: 0,
+    launchOffsetY: 0,
+    launchVelocityX: 920,
+    launchVelocityY: -740,
+    launchRotation: 0,
+    launchGravity: 1800,
+  });
+
+  const advanced = advanceZombieLaunch(launched, 0.5);
+  assert.equal(advanced.launchOffsetX > 0, true);
+  assert.equal(advanced.launchOffsetY < 0, true);
+  assert.equal(advanced.launchRotation > 0, true);
+});
+
 test('zombie damage removes one health without going below zero', () => {
   const { applyZombieDamage } = loadGame();
 

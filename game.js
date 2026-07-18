@@ -284,6 +284,47 @@
     return Math.min(bounds.max, Math.max(bounds.min, nextPosition));
   }
 
+  function cameraOffsetForTarget(targetX, viewportWidth, worldWidth, focusRatio = 0.38) {
+    const maxOffset = Math.max(0, worldWidth - viewportWidth);
+    const desiredOffset = targetX - viewportWidth * focusRatio;
+    return Math.min(maxOffset, Math.max(0, desiredOffset));
+  }
+
+  function worldToScreenX(worldX, cameraOffset) {
+    return worldX - cameraOffset;
+  }
+
+  function createZombieWavePositions(
+    requestedCount,
+    cameraOffset,
+    viewportWidth,
+    worldWidth,
+    random = Math.random,
+  ) {
+    const count = Math.max(5, Math.floor(requestedCount));
+    const edgePadding = 120;
+    const jitterRange = 180;
+    return Array.from({ length: count }, () => {
+      const fromLeft = random() < 0.5;
+      const jitter = Math.min(1, Math.max(0, random())) * jitterRange;
+      const rawX = fromLeft
+        ? cameraOffset - edgePadding - jitter
+        : cameraOffset + viewportWidth + edgePadding + jitter;
+      return {
+        x: Math.min(worldWidth - 60, Math.max(60, rawX)),
+        side: fromLeft ? 'left' : 'right',
+      };
+    });
+  }
+
+  function createZombieSpawnSchedule(spawns, startTime, requestedSpacing) {
+    const spacing = Math.max(2000, requestedSpacing);
+    return spawns.map((spawn, index) => ({
+      ...spawn,
+      spawnAt: startTime + index * spacing,
+    }));
+  }
+
   function canEnterVehicle(soldierX, entryX, maxDistance) {
     return Math.abs(soldierX - entryX) <= maxDistance;
   }
@@ -352,12 +393,15 @@
     beginZombieLaunch,
     beginReload,
     beginCombat,
+    cameraOffsetForTarget,
     canFire,
     canEnterVehicle,
     combatFiresProjectile,
     completeReload,
     consumeRound,
     createAmmoState,
+    createZombieSpawnSchedule,
+    createZombieWavePositions,
     createZombieState,
     directionFromKeys,
     driveAimCell,
@@ -372,6 +416,7 @@
     vehicleHitsZombie,
     vehicleAimFrame,
     vehicleAimRow,
+    worldToScreenX,
     zombieAttackLands,
     zombieCanAttack,
     zombieCanTakeHit,

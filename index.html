@@ -14,6 +14,7 @@
         --army: #596328;
         --signal: #d7ed39;
         --ground-y: clamp(5.5rem, 11vh, 7.5rem);
+        --world-width: 4800px;
         --soldier-width: min(27vw, 390px);
         --vehicle-width: min(44vw, 620px);
         --zombie-width: min(15vw, 190px);
@@ -47,7 +48,8 @@
         position: relative;
         min-height: 100svh;
         overflow: hidden;
-        background: var(--paper);
+        background:
+          linear-gradient(180deg, #edf1e4 0 54%, #d9ddcb 54% 55%, #f7f6ed 72% 100%);
       }
 
       .scene::before {
@@ -241,8 +243,112 @@
       }
 
       .world {
+        --camera-x: 0px;
+        isolation: isolate;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        width: var(--world-width);
+        overflow: hidden;
+        transform: translate3d(calc(0px - var(--camera-x)), 0, 0);
+        will-change: transform;
+      }
+
+      .world::before {
         position: absolute;
         inset: 0;
+        z-index: -3;
+        background:
+          linear-gradient(166deg, transparent 0 56%, rgb(89 99 40 / 10%) 56.2% 64%, transparent 64.2%) 0 0 / 930px 100% repeat-x,
+          radial-gradient(ellipse at 20% 62%, rgb(89 99 40 / 13%) 0 8%, transparent 8.3%) 0 0 / 760px 100% repeat-x,
+          linear-gradient(180deg, transparent 0 69%, rgb(89 99 40 / 8%) 69% 70%, transparent 70%);
+        content: "";
+      }
+
+      .world::after {
+        position: absolute;
+        right: 0;
+        bottom: var(--ground-y);
+        left: 0;
+        z-index: -1;
+        height: 0.32rem;
+        background: repeating-linear-gradient(90deg, #596328 0 3rem, transparent 3rem 5rem);
+        box-shadow: 0 1.35rem 0 rgb(89 99 40 / 9%);
+        content: "";
+      }
+
+      .landmark {
+        position: absolute;
+        z-index: -1;
+        bottom: calc(var(--ground-y) + 0.32rem);
+        color: #596328;
+        filter: drop-shadow(0 10px 0 rgb(89 99 40 / 8%));
+      }
+
+      .landmark::after {
+        position: absolute;
+        left: 50%;
+        padding: 0.28rem 0.5rem;
+        border: 1px solid currentColor;
+        background: rgb(247 246 237 / 86%);
+        font-size: 0.62rem;
+        font-weight: 800;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        transform: translateX(-50%);
+        white-space: nowrap;
+      }
+
+      .landmark--checkpoint {
+        left: 1760px;
+        width: 280px;
+        height: 145px;
+        border-right: 8px solid currentColor;
+        border-left: 8px solid currentColor;
+        background: linear-gradient(135deg, transparent 47%, currentColor 48% 52%, transparent 53%) 0 0 / 56px 56px;
+      }
+
+      .landmark--checkpoint::after {
+        top: -2rem;
+        content: "Sektor Bravo · 1.8 km";
+      }
+
+      .landmark--outpost {
+        left: 3000px;
+        width: 330px;
+        height: 180px;
+        border: 8px solid currentColor;
+        border-top-width: 22px;
+        clip-path: polygon(0 27%, 16% 27%, 16% 0, 29% 0, 29% 27%, 100% 27%, 100% 100%, 0 100%);
+        opacity: 0.72;
+      }
+
+      .landmark--outpost::after {
+        top: -3.9rem;
+        content: "Övergiven utpost · 3.1 km";
+      }
+
+      .landmark--evac {
+        left: 4350px;
+        width: 300px;
+        height: 110px;
+        border: 5px solid currentColor;
+        border-radius: 50%;
+        box-shadow: inset 0 0 0 18px rgb(89 99 40 / 8%);
+      }
+
+      .landmark--evac::before {
+        position: absolute;
+        inset: 20% 46%;
+        background: currentColor;
+        box-shadow: -52px 30px 0 -4px currentColor, 52px 30px 0 -4px currentColor;
+        content: "";
+      }
+
+      .landmark--evac::after {
+        top: -2.3rem;
+        content: "Evac Echo · 4.6 km";
       }
 
       .soldier-stage {
@@ -269,6 +375,12 @@
 
       .soldier-stage.is-hit {
         animation: player-hit 180ms ease-out;
+      }
+
+      .zombie-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
       }
 
       .soldier {
@@ -406,10 +518,10 @@
       }
 
       .entry-prompt {
-        position: absolute;
+        position: fixed;
         z-index: 18;
-        right: min(30vw, 25rem);
-        bottom: calc(var(--ground-y) + min(23vw, 16rem));
+        top: 50%;
+        left: 50%;
         display: flex;
         align-items: center;
         gap: 0.7rem;
@@ -588,6 +700,60 @@
         text-transform: uppercase;
       }
 
+      .map-progress {
+        --route-progress: 0%;
+        position: fixed;
+        z-index: 20;
+        bottom: clamp(3.8rem, 8vw, 6.4rem);
+        left: 50%;
+        display: grid;
+        width: min(32rem, 46vw);
+        gap: 0.35rem;
+        padding: 0.65rem 0.8rem;
+        border: 1px solid rgb(23 26 18 / 18%);
+        background: rgb(255 255 255 / 88%);
+        box-shadow: 5px 5px 0 rgb(89 99 40 / 12%);
+        pointer-events: none;
+        transform: translateX(-50%);
+      }
+
+      .map-progress__labels {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 0.58rem;
+        font-weight: 800;
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
+
+      .map-progress__track {
+        position: relative;
+        height: 0.3rem;
+        background: rgb(23 26 18 / 13%);
+      }
+
+      .map-progress__track::after {
+        display: block;
+        width: var(--route-progress);
+        height: 100%;
+        background: var(--army);
+        content: "";
+      }
+
+      .map-progress__track span {
+        position: absolute;
+        top: 50%;
+        left: var(--route-progress);
+        width: 0.7rem;
+        height: 0.7rem;
+        border: 2px solid white;
+        border-radius: 50%;
+        background: var(--signal);
+        box-shadow: 0 0 0 1px var(--ink);
+        transform: translate(-50%, -50%);
+      }
+
       .scene.is-mounted {
         cursor: none;
       }
@@ -674,8 +840,8 @@
         }
 
         .entry-prompt {
-          right: 24vw;
-          bottom: calc(var(--ground-y) + 34vw);
+          right: auto;
+          bottom: auto;
         }
 
         .controls {
@@ -685,6 +851,11 @@
 
         .mounted-note {
           display: none !important;
+        }
+
+        .map-progress {
+          bottom: 4.15rem;
+          width: min(15rem, 52vw);
         }
       }
 
@@ -702,9 +873,9 @@
   <body>
     <main class="scene" id="scene">
       <header class="hud">
-        <p class="hud__eyebrow">Fordonsstation 06</p>
-        <h1>Mount up.</h1>
-        <p class="hud__meta">Infanteri → skytt / fordon 66855</p>
+        <p class="hud__eyebrow">Evakueringsrutt Echo</p>
+        <h1>Push east.</h1>
+        <p class="hud__meta">4.8 km · tre hotzoner · en väg ut</p>
       </header>
 
       <div class="mode-chip" aria-live="polite">
@@ -726,21 +897,26 @@
         <strong><span id="healthCount">3</span> / 3</strong>
       </div>
 
-      <div class="world">
-        <figure class="zombie-stage" id="zombieStage" aria-label="Patrullerande zombie, två träffar kvar">
-          <img
-            class="zombie"
-            id="zombie"
-            src="zombie_segments/walk_loop/transparent_frames/zombie_000001.png"
-            alt="Fientlig zombie"
-            width="720"
-            height="1280"
-            decoding="async"
-            draggable="false"
-          />
-        </figure>
+      <div class="world" id="world">
+        <div class="landmark landmark--checkpoint" aria-label="Kontrollpunkt i sektor Bravo"></div>
+        <div class="landmark landmark--outpost" aria-label="Övergiven militärutpost"></div>
+        <div class="landmark landmark--evac" aria-label="Evakueringszon Echo"></div>
+        <div class="zombie-layer" id="zombieLayer" aria-label="Anfallande zombievåg"></div>
+        <template id="zombieTemplate">
+          <figure class="zombie-stage" aria-label="Patrullerande zombie, två träffar kvar">
+            <img
+              class="zombie"
+              src="zombie_segments/walk_loop/transparent_frames/zombie_000001.png"
+              alt="Fientlig zombie"
+              width="720"
+              height="1280"
+              decoding="async"
+              draggable="false"
+            />
+          </figure>
+        </template>
 
-        <figure class="vehicle-stage" id="vehicleStage" aria-label="Parkerat militärfordon">
+        <figure class="vehicle-stage has-position" id="vehicleStage" aria-label="Parkerat militärfordon">
           <img
             class="vehicle vehicle--still"
             id="vehicleStill"
@@ -783,6 +959,15 @@
       <div class="tracer" id="tracer" aria-hidden="true"></div>
       <div class="infantry-projectiles" id="infantryProjectiles" aria-hidden="true"></div>
 
+      <div class="map-progress" id="mapProgress" aria-label="Framsteg längs evakueringsrutten">
+        <div class="map-progress__labels">
+          <span>Start</span>
+          <span><span id="distanceCount">0.3</span> / 4.8 km</span>
+          <span>Evac</span>
+        </div>
+        <div class="map-progress__track" aria-hidden="true"><span></span></div>
+      </div>
+
       <p class="controls">
         <kbd>A</kbd> Vänster <kbd>D</kbd> Höger
         <span class="controls__divider"></span>
@@ -809,13 +994,14 @@
         attack2: 'zombie_segments/attack_2/transparent_frames/zombie_',
       };
       const scene = document.querySelector('#scene');
+      const world = document.querySelector('#world');
       const soldier = document.querySelector('#soldier');
       const soldierStage = document.querySelector('#soldierStage');
       const vehicleStage = document.querySelector('#vehicleStage');
       const vehicleAnimated = document.querySelector('#vehicleAnimated');
       const vehicleDriving = document.querySelector('#vehicleDriving');
-      const zombie = document.querySelector('#zombie');
-      const zombieStage = document.querySelector('#zombieStage');
+      const zombieLayer = document.querySelector('#zombieLayer');
+      const zombieTemplate = document.querySelector('#zombieTemplate');
       const entryPrompt = document.querySelector('#entryPrompt');
       const modeLabel = document.querySelector('#modeLabel');
       const ammoMeter = document.querySelector('#ammoMeter');
@@ -825,6 +1011,8 @@
       const crosshair = document.querySelector('#crosshair');
       const tracer = document.querySelector('#tracer');
       const infantryProjectiles = document.querySelector('#infantryProjectiles');
+      const mapProgress = document.querySelector('#mapProgress');
+      const distanceCount = document.querySelector('#distanceCount');
       const activeKeys = new Set();
       const movementSpeed = 260;
       const vehicleSpeed = 210;
@@ -837,9 +1025,12 @@
       const zombieSpeed = 34;
       const zombieAttackRange = 100;
       const reloadDuration = 1150;
+      const zombieWaveSize = 5;
+      const zombieSpawnSpacing = 2000;
       const zombieSpawnInterval = 30000;
-      const soldierSpawnX = Math.min(140, window.innerWidth * 0.12);
-      const zombieSpawnX = Math.max(40, window.innerWidth * 0.1);
+      const worldWidth = 4800;
+      const soldierSpawnX = 260;
+      const vehicleSpawnX = 1050;
       let idleIndex = 0;
       let runningFrame = 1;
       let position = soldierSpawnX;
@@ -855,19 +1046,22 @@
       let aimFrame = 1;
       let aimRow = 0;
       let driveFrame = 1;
-      let vehiclePosition = null;
+      let vehiclePosition = vehicleSpawnX;
+      let cameraOffset = 0;
       let pointerX = window.innerWidth * 0.75;
       let pointerY = window.innerHeight * 0.38;
-      let zombieState = ArmyGame.createZombieState();
-      let zombiePosition = zombieSpawnX;
-      let zombieDirection = 1;
       let playerHealth = 3;
       let lastTime = performance.now();
       let lastFrameChange = lastTime;
       let lastDriveFrameChange = lastTime;
-      let lastZombieFrameChange = lastTime;
+      let lastZombieSpawnAt = Number.NEGATIVE_INFINITY;
       let nextZombieSpawnAt = lastTime + zombieSpawnInterval;
       const projectiles = [];
+      const zombies = [];
+      const pendingZombieSpawns = [];
+
+      world.style.width = `${worldWidth}px`;
+      world.style.setProperty('--world-width', `${worldWidth}px`);
 
       function updateAmmoMeter() {
         ammoCount.textContent = ammoState.rounds;
@@ -891,6 +1085,13 @@
           activeKeys.clear();
           combat = null;
         }
+      }
+
+      function updateMapProgress() {
+        const trackedPosition = mounted ? vehiclePosition : position;
+        const progress = Math.min(100, Math.max(0, (trackedPosition / worldWidth) * 100));
+        mapProgress.style.setProperty('--route-progress', `${progress}%`);
+        distanceCount.textContent = (trackedPosition / 1000).toFixed(1);
       }
 
       const frameSource = (frame) => `${frameRoot}${String(frame).padStart(6, '0')}.png`;
@@ -943,51 +1144,106 @@
         }
       }
 
-      function updateZombieSprite() {
-        zombie.src = zombieFrameSource(zombieState);
-        zombieStage.classList.toggle('is-dead', zombieState.phase === 'dead');
-        zombieStage.classList.toggle('is-launched', zombieState.phase === 'launched');
-        zombieStage.setAttribute(
+      function updateZombieSprite(actor) {
+        actor.image.src = zombieFrameSource(actor.state);
+        actor.element.classList.toggle('is-dead', actor.state.phase === 'dead');
+        actor.element.classList.toggle('is-launched', actor.state.phase === 'launched');
+        actor.element.setAttribute(
           'aria-label',
-          zombieState.phase === 'dead'
+          actor.state.phase === 'dead'
             ? 'Nedskjuten zombie'
-            : zombieState.phase === 'launched'
+            : actor.state.phase === 'launched'
               ? 'Zombie slungas iväg av bilen'
-            : zombieState.phase === 'attack1' || zombieState.phase === 'attack2'
+            : actor.state.phase === 'attack1' || actor.state.phase === 'attack2'
               ? 'Zombie utför närstridsattack'
-              : `Fientlig zombie, ${zombieState.health} träff${zombieState.health === 1 ? '' : 'ar'} kvar`,
+              : `Fientlig zombie, ${actor.state.health} träff${actor.state.health === 1 ? '' : 'ar'} kvar`,
         );
       }
 
-      function spawnZombie(time) {
-        zombieState = ArmyGame.createZombieState();
-        zombiePosition = zombieSpawnX;
-        zombieDirection = 1;
+      function renderZombie(actor) {
+        actor.element.style.setProperty('--zombie-x', `${actor.position}px`);
+        actor.element.style.setProperty('--zombie-facing', actor.direction);
+        actor.element.style.setProperty(
+          '--zombie-launch-x',
+          actor.state.phase === 'launched' ? `${actor.state.launchOffsetX}px` : '0px',
+        );
+        actor.element.style.setProperty(
+          '--zombie-launch-y',
+          actor.state.phase === 'launched' ? `${actor.state.launchOffsetY}px` : '0px',
+        );
+        actor.element.style.setProperty(
+          '--zombie-rotation',
+          actor.state.phase === 'launched' ? `${actor.state.launchRotation}deg` : '0deg',
+        );
+      }
+
+      function createZombieActor(spawn, time) {
+        const fragment = zombieTemplate.content.cloneNode(true);
+        const element = fragment.querySelector('.zombie-stage');
+        const image = fragment.querySelector('.zombie');
+        const actor = {
+          element,
+          image,
+          state: ArmyGame.createZombieState(),
+          position: spawn.x,
+          direction: spawn.side === 'left' ? 1 : -1,
+          speed: zombieSpeed * (0.85 + Math.random() * 0.3),
+          lastFrameChange: time,
+        };
+        zombieLayer.append(fragment);
+        updateZombieSprite(actor);
+        renderZombie(actor);
+        zombies.push(actor);
+      }
+
+      function spawnZombieWave(time) {
+        for (let index = zombies.length - 1; index >= 0; index -= 1) {
+          if (zombies[index].state.phase !== 'dead') continue;
+          zombies[index].element.remove();
+          zombies.splice(index, 1);
+        }
+        const spawns = ArmyGame.createZombieWavePositions(
+          zombieWaveSize,
+          cameraOffset,
+          window.innerWidth,
+          worldWidth,
+        );
+        pendingZombieSpawns.push(
+          ...ArmyGame.createZombieSpawnSchedule(spawns, time, zombieSpawnSpacing),
+        );
         nextZombieSpawnAt = time + zombieSpawnInterval;
-        lastZombieFrameChange = time;
-        zombieStage.style.setProperty('--zombie-launch-x', '0px');
-        zombieStage.style.setProperty('--zombie-launch-y', '0px');
-        zombieStage.style.setProperty('--zombie-rotation', '0deg');
-        updateZombieSprite();
+      }
+
+      function spawnPendingZombies(time) {
+        const nextSpawn = pendingZombieSpawns[0];
+        if (!nextSpawn || nextSpawn.spawnAt > time) return;
+        if (time - lastZombieSpawnAt < zombieSpawnSpacing) return;
+        pendingZombieSpawns.shift();
+        createZombieActor(nextSpawn, time);
+        lastZombieSpawnAt = time;
       }
 
       function shootZombieAt(x, y) {
-        if (!ArmyGame.shotHitsTarget(x, y, zombieStage.getBoundingClientRect())) return false;
-        const nextState = ArmyGame.hitZombie(zombieState);
-        if (nextState === zombieState) return false;
-        zombieState = nextState;
-        lastZombieFrameChange = performance.now();
-        updateZombieSprite();
-        return true;
+        for (const actor of zombies) {
+          if (!ArmyGame.shotHitsTarget(x, y, actor.element.getBoundingClientRect())) continue;
+          const nextState = ArmyGame.hitZombie(actor.state);
+          if (nextState === actor.state) continue;
+          actor.state = nextState;
+          actor.lastFrameChange = performance.now();
+          updateZombieSprite(actor);
+          return true;
+        }
+        return false;
       }
 
       function spawnInfantryProjectile() {
         const bounds = soldierStage.getBoundingClientRect();
         const projectile = document.createElement('span');
-        const x = bounds.left + bounds.width * (facing > 0 ? 0.67 : 0.33);
+        const screenX = bounds.left + bounds.width * (facing > 0 ? 0.67 : 0.33);
+        const x = screenX + cameraOffset;
         const y = bounds.top + bounds.height * 0.31;
         projectile.className = 'infantry-projectile';
-        projectile.style.left = `${x}px`;
+        projectile.style.left = `${screenX}px`;
         projectile.style.top = `${y}px`;
         projectile.style.rotate = facing > 0 ? '0deg' : '180deg';
         infantryProjectiles.append(projectile);
@@ -995,35 +1251,42 @@
       }
 
       function updateInfantryProjectiles(deltaSeconds) {
-        const targetBounds = zombieStage.getBoundingClientRect();
         for (let index = projectiles.length - 1; index >= 0; index -= 1) {
           const projectile = projectiles[index];
           const nextX = projectile.x + projectile.direction * projectile.speed * deltaSeconds;
-          const hitsZombie =
-            ArmyGame.zombieCanTakeHit(zombieState) &&
-            ArmyGame.projectileHitsTarget(projectile, nextX, targetBounds);
+          const screenX = ArmyGame.worldToScreenX(projectile.x, cameraOffset);
+          const nextScreenX = ArmyGame.worldToScreenX(nextX, cameraOffset);
+          const hitActor = zombies.find(
+            (actor) =>
+              ArmyGame.zombieCanTakeHit(actor.state) &&
+              ArmyGame.projectileHitsTarget(
+                { ...projectile, x: screenX },
+                nextScreenX,
+                actor.element.getBoundingClientRect(),
+              ),
+          );
 
-          if (hitsZombie) {
-            zombieState = ArmyGame.hitZombie(zombieState);
-            lastZombieFrameChange = performance.now();
-            updateZombieSprite();
+          if (hitActor) {
+            hitActor.state = ArmyGame.hitZombie(hitActor.state);
+            hitActor.lastFrameChange = performance.now();
+            updateZombieSprite(hitActor);
           }
 
-          if (hitsZombie || nextX < -40 || nextX > window.innerWidth + 40) {
+          if (hitActor || nextX < -40 || nextX > worldWidth + 40) {
             projectile.element.remove();
             projectiles.splice(index, 1);
             continue;
           }
 
           projectile.x = nextX;
-          projectile.element.style.left = `${nextX}px`;
+          projectile.element.style.left = `${nextScreenX}px`;
         }
       }
 
       function vehicleEntry() {
         const bounds = vehicleStage.getBoundingClientRect();
         return {
-          x: bounds.left + bounds.width * 0.23,
+          x: bounds.left + cameraOffset + bounds.width * 0.23,
           distance: Math.max(105, bounds.width * 0.14),
         };
       }
@@ -1059,10 +1322,6 @@
         entryPrompt.hidden = true;
 
         if (mounted) {
-          if (vehiclePosition === null) {
-            const bounds = vehicleStage.getBoundingClientRect();
-            vehiclePosition = bounds.left + bounds.width / 2;
-          }
           vehicleStage.classList.add('has-position');
           vehicleStage.style.setProperty('--vehicle-x', `${vehiclePosition}px`);
           updateDriveAimFrame();
@@ -1072,7 +1331,7 @@
 
         stopFiring();
         const entry = vehicleEntry();
-        position = Math.max(70, entry.x - Math.min(160, window.innerWidth * 0.12));
+        position = Math.max(80, entry.x - Math.min(160, window.innerWidth * 0.12));
         soldier.src = frameSource(idleSequence[0]);
         idleIndex = 0;
       }
@@ -1239,110 +1498,115 @@
       });
 
       window.addEventListener('resize', () => {
-        position = Math.min(window.innerWidth - 60, Math.max(60, position));
+        position = Math.min(worldWidth - 80, Math.max(80, position));
+        cameraOffset = ArmyGame.cameraOffsetForTarget(
+          mounted ? vehiclePosition : position,
+          window.innerWidth,
+          worldWidth,
+        );
+        world.style.setProperty('--camera-x', `${cameraOffset}px`);
         if (mounted) updateAim();
       });
 
       function animate(time) {
         const deltaSeconds = Math.min((time - lastTime) / 1000, 0.05);
         const direction = playerHealth > 0 ? ArmyGame.directionFromKeys(activeKeys) : 0;
-        const bounds = { min: 60, max: window.innerWidth - 60 };
+        const bounds = { min: 80, max: worldWidth - 80 };
+        const targetPosition = mounted ? vehiclePosition : position;
         lastTime = time;
 
         if (time >= nextZombieSpawnAt) {
-          spawnZombie(time);
+          spawnZombieWave(time);
         }
+        spawnPendingZombies(time);
 
-        if (
-          zombieState.phase === 'walk' &&
-          ArmyGame.zombieCanAttack(
-            zombiePosition,
-            position,
-            zombieAttackRange,
-            mounted,
-            playerHealth,
-          )
-        ) {
-          zombieDirection = position < zombiePosition ? -1 : 1;
-          zombieState = ArmyGame.beginZombieAttack(zombieState);
-          updateZombieSprite();
-          lastZombieFrameChange = time;
-        } else if (zombieState.phase === 'walk') {
-          const zombieBounds = {
-            min: Math.max(24, window.innerWidth * 0.04),
-            max: Math.min(window.innerWidth - 24, window.innerWidth * 0.96),
-          };
-          zombieDirection = position < zombiePosition ? -1 : 1;
-          zombiePosition = ArmyGame.movePosition(
-            zombiePosition,
-            zombieDirection,
-            deltaSeconds,
-            zombieSpeed,
-            zombieBounds,
-          );
-          if (zombiePosition <= zombieBounds.min) zombieDirection = 1;
-          if (zombiePosition >= zombieBounds.max) zombieDirection = -1;
-        }
-
-        if (
-          mounted &&
-          direction !== 0 &&
-          zombieState.phase !== 'dead' &&
-          zombieState.phase !== 'launched' &&
-          ArmyGame.vehicleHitsZombie(
-            vehicleStage.getBoundingClientRect(),
-            zombieStage.getBoundingClientRect(),
-          )
-        ) {
-          zombieDirection = direction;
-          zombieState = ArmyGame.beginZombieLaunch(zombieState, direction);
-          updateZombieSprite();
-          lastZombieFrameChange = time;
-        }
-
-        if (zombieState.phase === 'launched') {
-          zombieState = ArmyGame.advanceZombieLaunch(zombieState, deltaSeconds);
-          const launchX = zombiePosition + zombieState.launchOffsetX;
-          const launchY = zombieState.launchOffsetY;
-          const offscreen =
-            launchX < -200 ||
-            launchX > window.innerWidth + 200 ||
-            launchY > window.innerHeight + 200 ||
-            launchY < -window.innerHeight * 0.75;
-          if (offscreen) {
-            zombiePosition = launchX;
-            zombieState = { phase: 'dead', frame: 1, health: 0 };
-            updateZombieSprite();
-          }
-        }
-
-        const isZombieAttacking =
-          zombieState.phase === 'attack1' || zombieState.phase === 'attack2';
-        const currentZombieFrameDuration = isZombieAttacking
-          ? zombieAttackFrameDuration
-          : zombieFrameDuration;
-        if (
-          zombieState.phase !== 'dead' &&
-          time - lastZombieFrameChange >= currentZombieFrameDuration
-        ) {
-          const previousZombieState = zombieState;
-          zombieState = ArmyGame.advanceZombie(zombieState);
+        const zombieBounds = { min: 60, max: worldWidth - 60 };
+        const vehicleBounds = mounted ? vehicleStage.getBoundingClientRect() : null;
+        for (const actor of zombies) {
           if (
-            ArmyGame.zombieAttackLands(previousZombieState, zombieState) &&
+            actor.state.phase === 'walk' &&
             ArmyGame.zombieCanAttack(
-              zombiePosition,
-              position,
+              actor.position,
+              targetPosition,
               zombieAttackRange,
               mounted,
               playerHealth,
             )
           ) {
-            playerHealth = ArmyGame.applyZombieDamage(playerHealth);
-            retrigger(soldierStage, 'is-hit');
-            updatePlayerHealth();
+            actor.direction = targetPosition < actor.position ? -1 : 1;
+            actor.state = ArmyGame.beginZombieAttack(actor.state);
+            actor.lastFrameChange = time;
+            updateZombieSprite(actor);
+          } else if (actor.state.phase === 'walk') {
+            actor.direction = targetPosition < actor.position ? -1 : 1;
+            actor.position = ArmyGame.movePosition(
+              actor.position,
+              actor.direction,
+              deltaSeconds,
+              actor.speed,
+              zombieBounds,
+            );
           }
-          updateZombieSprite();
-          lastZombieFrameChange = time;
+
+          if (
+            mounted &&
+            direction !== 0 &&
+            actor.state.phase !== 'dead' &&
+            actor.state.phase !== 'launched' &&
+            ArmyGame.vehicleHitsZombie(vehicleBounds, actor.element.getBoundingClientRect())
+          ) {
+            actor.direction = direction;
+            actor.state = ArmyGame.beginZombieLaunch(actor.state, direction);
+            actor.lastFrameChange = time;
+            updateZombieSprite(actor);
+          }
+
+          if (actor.state.phase === 'launched') {
+            actor.state = ArmyGame.advanceZombieLaunch(actor.state, deltaSeconds);
+            const launchX = actor.position + actor.state.launchOffsetX;
+            const launchY = actor.state.launchOffsetY;
+            const offscreen =
+              launchX < -200 ||
+              launchX > worldWidth + 200 ||
+              launchY > window.innerHeight + 200 ||
+              launchY < -window.innerHeight * 0.75;
+            if (offscreen) {
+              actor.position = launchX;
+              actor.state = { phase: 'dead', frame: 1, health: 0 };
+              updateZombieSprite(actor);
+            }
+          }
+
+          const isZombieAttacking =
+            actor.state.phase === 'attack1' || actor.state.phase === 'attack2';
+          const currentZombieFrameDuration = isZombieAttacking
+            ? zombieAttackFrameDuration
+            : zombieFrameDuration;
+          if (
+            actor.state.phase !== 'dead' &&
+            time - actor.lastFrameChange >= currentZombieFrameDuration
+          ) {
+            const previousZombieState = actor.state;
+            actor.state = ArmyGame.advanceZombie(actor.state);
+            if (
+              ArmyGame.zombieAttackLands(previousZombieState, actor.state) &&
+              ArmyGame.zombieCanAttack(
+                actor.position,
+                targetPosition,
+                zombieAttackRange,
+                mounted,
+                playerHealth,
+              )
+            ) {
+              playerHealth = ArmyGame.applyZombieDamage(playerHealth);
+              retrigger(soldierStage, 'is-hit');
+              updatePlayerHealth();
+            }
+            actor.lastFrameChange = time;
+            updateZombieSprite(actor);
+          }
+
+          renderZombie(actor);
         }
 
         updateInfantryProjectiles(deltaSeconds);
@@ -1361,7 +1625,7 @@
           const halfWidth = vehicleBounds.width / 2;
           const vehicleBoundsX = {
             min: halfWidth * 0.72,
-            max: window.innerWidth - halfWidth * 0.72,
+            max: worldWidth - halfWidth * 0.72,
           };
           vehiclePosition = ArmyGame.movePosition(
             vehiclePosition,
@@ -1409,41 +1673,44 @@
 
         vehicleStage.classList.toggle('is-driving', mounted && direction !== 0);
 
+        const cameraTarget = mounted ? vehiclePosition : position;
+        const desiredCameraOffset = ArmyGame.cameraOffsetForTarget(
+          cameraTarget,
+          window.innerWidth,
+          worldWidth,
+        );
+        const cameraEase = Math.min(1, deltaSeconds * 7);
+        cameraOffset += (desiredCameraOffset - cameraOffset) * cameraEase;
+        if (Math.abs(desiredCameraOffset - cameraOffset) < 0.1) {
+          cameraOffset = desiredCameraOffset;
+        }
+        world.style.setProperty('--camera-x', `${cameraOffset}px`);
+
         if (!mounted) {
           const entry = vehicleEntry();
           const isNear = ArmyGame.canEnterVehicle(position, entry.x, entry.distance);
           entryPrompt.hidden = !isNear;
-          if (isNear) entryPrompt.innerHTML = '<kbd>E</kbd> Hoppa in';
+          if (isNear) {
+            const vehicleBounds = vehicleStage.getBoundingClientRect();
+            entryPrompt.innerHTML = '<kbd>E</kbd> Hoppa in';
+            entryPrompt.style.left = `${vehicleBounds.left + vehicleBounds.width * 0.25}px`;
+            entryPrompt.style.top = `${Math.max(90, vehicleBounds.top - 18)}px`;
+          }
         }
 
         soldier.style.setProperty('--facing', facing);
         soldierStage.style.setProperty('--player-x', `${position}px`);
-        zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
-        zombieStage.style.setProperty('--zombie-facing', zombieDirection);
-        zombieStage.style.setProperty(
-          '--zombie-launch-x',
-          zombieState.phase === 'launched' ? `${zombieState.launchOffsetX}px` : '0px',
-        );
-        zombieStage.style.setProperty(
-          '--zombie-launch-y',
-          zombieState.phase === 'launched' ? `${zombieState.launchOffsetY}px` : '0px',
-        );
-        zombieStage.style.setProperty(
-          '--zombie-rotation',
-          zombieState.phase === 'launched' ? `${zombieState.launchRotation}deg` : '0deg',
-        );
+        updateMapProgress();
         requestAnimationFrame(animate);
       }
 
+      vehicleStage.style.setProperty('--vehicle-x', `${vehiclePosition}px`);
       soldierStage.style.setProperty('--player-x', `${position}px`);
-      zombieStage.style.setProperty('--zombie-x', `${zombiePosition}px`);
-      zombieStage.style.setProperty('--zombie-facing', zombieDirection);
-      zombieStage.style.setProperty('--zombie-launch-x', '0px');
-      zombieStage.style.setProperty('--zombie-launch-y', '0px');
-      zombieStage.style.setProperty('--zombie-rotation', '0deg');
-      updateZombieSprite();
+      spawnZombieWave(lastTime);
+      spawnPendingZombies(lastTime);
       updateAmmoMeter();
       updatePlayerHealth();
+      updateMapProgress();
       updateDriveAimFrame();
       updateAim();
       requestAnimationFrame(animate);

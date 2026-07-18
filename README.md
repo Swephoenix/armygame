@@ -1,6 +1,6 @@
 # Armygame
 
-A small browser game with an infantry soldier, vehicle entry, mounted aim mode, ammo/reload, and zombie NPCs.
+A side-scrolling browser game with an infantry soldier, vehicle entry, mounted aim mode, ammo/reload, and randomized five-zombie attack waves staggered by at least two seconds per spawn. The 4.8 km route follows the active player or vehicle through three visual map sectors.
 
 Controls:
 

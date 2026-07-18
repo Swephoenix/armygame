@@ -36,6 +36,70 @@ test('movement is time-based and clamped to the viewport bounds', () => {
   assert.equal(movePosition(-250, -1, 1, 240, bounds), -300);
 });
 
+test('side-scroller camera follows the player and stops at both map edges', () => {
+  const { cameraOffsetForTarget } = loadGame();
+
+  assert.equal(cameraOffsetForTarget(240, 1000, 4800), 0);
+  assert.equal(cameraOffsetForTarget(2400, 1000, 4800), 2020);
+  assert.equal(cameraOffsetForTarget(4700, 1000, 4800), 3800);
+  assert.equal(cameraOffsetForTarget(500, 1200, 900), 0);
+});
+
+test('world positions convert to screen positions through the camera offset', () => {
+  const { worldToScreenX } = loadGame();
+
+  assert.equal(worldToScreenX(2400, 2020), 380);
+  assert.equal(worldToScreenX(400, 0), 400);
+});
+
+test('zombie waves contain at least five spawns and can use both screen sides', () => {
+  const { createZombieWavePositions } = loadGame();
+  const randomValues = [0.1, 0.2, 0.9, 0.3, 0.25, 0.4, 0.75, 0.5, 0.8, 0.6];
+  let randomIndex = 0;
+  const positions = createZombieWavePositions(
+    3,
+    1000,
+    800,
+    4800,
+    () => randomValues[randomIndex++],
+  );
+
+  assert.equal(positions.length, 5);
+  assert.equal(positions.some((spawn) => spawn.side === 'left'), true);
+  assert.equal(positions.some((spawn) => spawn.side === 'right'), true);
+  assert.equal(positions.every((spawn) => spawn.x < 1000 || spawn.x > 1800), true);
+});
+
+test('a requested zombie wave can contain more than five actors', () => {
+  const { createZombieWavePositions } = loadGame();
+  const positions = createZombieWavePositions(7, 1000, 800, 4800, () => 0.75);
+
+  assert.equal(positions.length, 7);
+  assert.equal(positions.every((spawn) => spawn.side === 'right'), true);
+});
+
+test('zombie spawn schedules keep at least two seconds between actors', () => {
+  const { createZombieSpawnSchedule } = loadGame();
+  const spawns = [
+    { x: 100, side: 'left' },
+    { x: 900, side: 'right' },
+    { x: 120, side: 'left' },
+  ];
+
+  assert.deepEqual(createZombieSpawnSchedule(spawns, 5000, 500), [
+    { x: 100, side: 'left', spawnAt: 5000 },
+    { x: 900, side: 'right', spawnAt: 7000 },
+    { x: 120, side: 'left', spawnAt: 9000 },
+  ]);
+});
+
+test('zombie spawn schedules may use a spacing longer than two seconds', () => {
+  const { createZombieSpawnSchedule } = loadGame();
+  const schedule = createZombieSpawnSchedule([{ x: 100 }, { x: 900 }], 1000, 3500);
+
+  assert.deepEqual(schedule.map((entry) => entry.spawnAt), [1000, 4500]);
+});
+
 test('combat starts by aiming through frames 109-130 before firing at 145', () => {
   const { advanceCombat, beginCombat } = loadGame();
 

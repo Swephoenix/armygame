@@ -25,11 +25,11 @@ test('all idle frame assets exist and the page points at the transparent frame d
   );
 });
 
-test('the soldier is presented on a plain white background', async () => {
+test('the soldier is presented on a light tactical landscape', async () => {
   const html = await readFile(pagePath, 'utf8');
 
   assert.match(html, /--paper:\s*#fff;/);
-  assert.match(html, /\.scene\s*\{[\s\S]*?background:\s*var\(--paper\);/);
+  assert.match(html, /\.scene\s*\{[\s\S]*?linear-gradient\(180deg,\s*#edf1e4/);
 });
 
 test('normalized subject anchor is centered in the stage', async () => {
@@ -145,8 +145,9 @@ test('driving and mouse aiming use the combined four-by-four sprite matrix', asy
 test('the game renders a shootable zombie NPC using all selected animation segments', async () => {
   const html = await readFile(pagePath, 'utf8');
 
-  assert.match(html, /id="zombieStage"/);
-  assert.match(html, /id="zombie"/);
+  assert.match(html, /id="zombieLayer"/);
+  assert.match(html, /id="zombieTemplate"/);
+  assert.match(html, /const\s+zombies\s*=\s*\[\];/);
   assert.match(html, /ArmyGame\.createZombieState\s*\(/);
   assert.match(html, /ArmyGame\.hitZombie\s*\(/);
   assert.match(html, /ArmyGame\.advanceZombie\s*\(/);
@@ -213,25 +214,42 @@ test('vehicle impacts launch zombies off the map with visible motion and rotatio
   assert.match(html, /Zombie slungas iväg av bilen/);
 });
 
-test('the car spawns farther right and zombies spawn left to chase the soldier', async () => {
+test('the game uses an expanded side-scrolling world with a following camera', async () => {
   const html = await readFile(pagePath, 'utf8');
 
-  assert.match(html, /right:\s*clamp\(0\.25rem,\s*1vw,\s*0\.75rem\);/);
-  assert.match(html, /const\s+soldierSpawnX\s*=\s*Math\.min\(140,\s*window\.innerWidth\s*\*\s*0\.12\)/);
-  assert.match(html, /const\s+zombieSpawnX\s*=\s*Math\.max\(40,\s*window\.innerWidth\s*\*\s*0\.1\)/);
+  assert.match(html, /const\s+worldWidth\s*=\s*4800;/);
+  assert.match(html, /const\s+soldierSpawnX\s*=\s*260;/);
+  assert.match(html, /const\s+vehicleSpawnX\s*=\s*1050;/);
   assert.match(html, /let\s+position\s*=\s*soldierSpawnX;/);
-  assert.match(html, /let\s+zombiePosition\s*=\s*zombieSpawnX;/);
-  assert.match(html, /let\s+zombieDirection\s*=\s*1;/);
-  assert.match(html, /zombieDirection\s*=\s*position\s*<\s*zombiePosition\s*\?\s*-1\s*:\s*1;/);
+  assert.match(html, /ArmyGame\.cameraOffsetForTarget\s*\(/);
+  assert.match(html, /world\.style\.setProperty\('--camera-x'/);
+  assert.match(html, /actor\.direction\s*=\s*targetPosition\s*<\s*actor\.position\s*\?\s*-1\s*:\s*1;/);
 });
 
-test('a zombie respawns every 30 seconds', async () => {
+test('the extended map has distinct sectors and a live distance indicator', async () => {
   const html = await readFile(pagePath, 'utf8');
 
+  assert.match(html, /id="mapProgress"/);
+  assert.match(html, /id="distanceCount"/);
+  assert.match(html, /class="landmark landmark--checkpoint"/);
+  assert.match(html, /class="landmark landmark--outpost"/);
+  assert.match(html, /class="landmark landmark--evac"/);
+  assert.match(html, /function updateMapProgress\s*\(/);
+});
+
+test('a random wave of at least five zombies spawns every 30 seconds', async () => {
+  const html = await readFile(pagePath, 'utf8');
+
+  assert.match(html, /const\s+zombieWaveSize\s*=\s*5;/);
+  assert.match(html, /const\s+zombieSpawnSpacing\s*=\s*2000;/);
   assert.match(html, /const\s+zombieSpawnInterval\s*=\s*30000;/);
+  assert.match(html, /const\s+pendingZombieSpawns\s*=\s*\[\];/);
   assert.match(html, /let\s+nextZombieSpawnAt\s*=\s*lastTime\s*\+\s*zombieSpawnInterval;/);
-  assert.match(html, /if\s*\(time\s*>=\s*nextZombieSpawnAt\)\s*\{\s*spawnZombie\(time\);\s*\}/);
-  assert.match(html, /function spawnZombie\s*\(time\)\s*\{/);
+  assert.match(html, /if\s*\(time\s*>=\s*nextZombieSpawnAt\)\s*\{\s*spawnZombieWave\(time\);\s*\}/);
+  assert.match(html, /function spawnZombieWave\s*\(time\)\s*\{/);
+  assert.match(html, /function spawnPendingZombies\s*\(time\)\s*\{/);
+  assert.match(html, /ArmyGame\.createZombieWavePositions\s*\(/);
+  assert.match(html, /ArmyGame\.createZombieSpawnSchedule\s*\(/);
   assert.match(html, /nextZombieSpawnAt\s*=\s*time\s*\+\s*zombieSpawnInterval;/);
 });
 

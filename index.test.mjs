@@ -213,6 +213,18 @@ test('vehicle impacts launch zombies off the map with visible motion and rotatio
   assert.match(html, /Zombie slungas iväg av bilen/);
 });
 
+test('the car spawns farther right and zombies spawn left to chase the soldier', async () => {
+  const html = await readFile(pagePath, 'utf8');
+
+  assert.match(html, /right:\s*clamp\(0\.25rem,\s*1vw,\s*0\.75rem\);/);
+  assert.match(html, /const\s+soldierSpawnX\s*=\s*Math\.min\(140,\s*window\.innerWidth\s*\*\s*0\.12\)/);
+  assert.match(html, /const\s+zombieSpawnX\s*=\s*Math\.max\(40,\s*window\.innerWidth\s*\*\s*0\.1\)/);
+  assert.match(html, /let\s+position\s*=\s*soldierSpawnX;/);
+  assert.match(html, /let\s+zombiePosition\s*=\s*zombieSpawnX;/);
+  assert.match(html, /let\s+zombieDirection\s*=\s*1;/);
+  assert.match(html, /zombieDirection\s*=\s*position\s*<\s*zombiePosition\s*\?\s*-1\s*:\s*1;/);
+});
+
 test('infantry projectiles are spawned from the rifle on matching firing frames', async () => {
   const html = await readFile(pagePath, 'utf8');
 
